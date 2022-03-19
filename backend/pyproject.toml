@@ -11,6 +11,7 @@ gql = {extras = ["aiohttp"], version = "^3.1.0"}
 SQLAlchemy = {extras = ["postgesql_asyncpg"], version = "^1.4.32"}
 asyncpg = "^0.25.0"
 SQLAlchemy-Utils = "^0.38.2"
+pydantic = "^1.9.0"
 
 [tool.poetry.dev-dependencies]
 pytest = "^7.1.1"

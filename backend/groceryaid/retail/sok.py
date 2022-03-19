@@ -3,7 +3,7 @@
 import gql
 import gql.transport.aiohttp as gql_aiohttp
 
-from .common import RetailChain, get_store_id
+from .common import RetailChain, Store, Price
 
 _store_and_products_query = gql.gql(
     """
@@ -34,23 +34,20 @@ def _get_gql_client():
     )
 
 
-async def fetch_store_and_prices():
+async def fetch_store_and_prices() -> tuple[Store, list[Price]]:
     """Fetch SOK stores and prices via external API"""
     async with _get_gql_client() as connection:
         result = await connection.execute(_store_and_products_query)
-    store = result["store"]
-    store_id = get_store_id(RetailChain.SOK, store["id"])
-    store_object = {
-        "id": store_id,
-        "chain": RetailChain.SOK.value,
-        "external_id": store["id"],
-        "name": store["name"],
-    }
-    price_objects = [
-        {
-            "store_id": store_id,
-            **item,
-        }
-        for item in store["products"]["items"]
+    store_dict = result["store"]
+    store = Store(
+        chain=RetailChain.SOK,
+        external_id=store_dict["id"],
+        name=store_dict["name"]
+    )
+    prices = [
+        Price(
+            store_id=store.id,
+            **item
+        ) for item in store_dict["products"]["items"]
     ]
-    return store_object, price_objects
+    return store, prices
