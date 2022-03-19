@@ -4,7 +4,6 @@ import enum
 
 import gql
 import gql.transport.aiohttp as gql_aiohttp
-import sqlalchemy
 
 from . import db
 
@@ -55,6 +54,7 @@ store_namespaces = {
 def get_store_id(chain: RetailChain, store_id):
     return uuid.uuid5(store_namespaces[chain], str(store_id))
 
+
 async def download_prices_sok():
     async with gql_client as gql_conn, db.engine.begin() as db_conn:
         chain = RetailChain.SOK
@@ -67,8 +67,8 @@ async def download_prices_sok():
                 "id": store_id,
                 "chain": chain.value,
                 "external_id": store["id"],
-                "name": store["name"]
-            }
+                "name": store["name"],
+            },
         )
         await db_conn.execute(
             db.prices.insert(),
@@ -76,9 +76,11 @@ async def download_prices_sok():
                 {
                     "store_id": store_id,
                     **item,
-                } for item in store["products"]["items"]
-            ]
+                }
+                for item in store["products"]["items"]
+            ],
         )
+
 
 if __name__ == "__main__":
     asyncio.run(download_prices_sok())
