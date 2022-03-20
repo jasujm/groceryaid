@@ -34,7 +34,7 @@ class Store(pydantic.BaseModel):
 
     id: uuid.UUID
     chain: RetailChain
-    external_id: typing.Annotated[str, pydantic.Field(max_length=31)]
+    external_id: typing.Annotated[str, pydantic.Field(max_length=36)]
     name: typing.Annotated[str, pydantic.Field(max_length=255)]
 
     # pylint: disable=all

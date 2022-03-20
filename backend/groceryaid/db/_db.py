@@ -43,7 +43,7 @@ stores = sqlalchemy.Table(
     _meta,
     sqlalchemy.Column("id", sqlt.uuid.UUIDType, primary_key=True),
     sqlalchemy.Column("chain", sqlalchemy.Enum(RetailChain), nullable=False),
-    sqlalchemy.Column("external_id", sqlalchemy.String(31), nullable=False),
+    sqlalchemy.Column("external_id", sqlalchemy.String(36), nullable=False),
     sqlalchemy.Column("name", sqlalchemy.String(255), nullable=False),
     *_get_timestamp_columns(),
     sqlalchemy.UniqueConstraint("chain", "external_id"),
