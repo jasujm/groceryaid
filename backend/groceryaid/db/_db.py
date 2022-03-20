@@ -11,11 +11,9 @@ import sqlalchemy.ext.asyncio as sqlaio
 import sqlalchemy_utils.types as sqlt
 
 from ..retail import RetailChain
+from ..settings import settings
 
-# TODO: store URL in environment
-_engine = sqlaio.create_async_engine(
-    "postgresql+asyncpg://groceryaid@localhost:5432/groceryaid"
-)
+_engine = sqlaio.create_async_engine(settings.database_url)
 
 _meta = sqlalchemy.MetaData()
 

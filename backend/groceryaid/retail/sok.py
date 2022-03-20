@@ -5,6 +5,8 @@ import gql.transport.aiohttp as gql_aiohttp
 
 from .common import RetailChain, Store, Price
 
+from ..settings import settings
+
 _store_and_products_query = gql.gql(
     """
     query {
@@ -28,10 +30,7 @@ _store_and_products_query = gql.gql(
 
 
 def _get_gql_client():
-    # TODO: store URL in environment
-    return gql.Client(
-        transport=gql_aiohttp.AIOHTTPTransport(url="https://cfapi.voikukka.fi/graphql")
-    )
+    return gql.Client(transport=gql_aiohttp.AIOHTTPTransport(url=settings.sok_api_url))
 
 
 async def fetch_store_and_prices() -> tuple[Store, list[Price]]:
