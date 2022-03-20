@@ -40,14 +40,9 @@ async def fetch_store_and_prices() -> tuple[Store, list[Price]]:
         result = await connection.execute(_store_and_products_query)
     store_dict = result["store"]
     store = Store(
-        chain=RetailChain.SOK,
-        external_id=store_dict["id"],
-        name=store_dict["name"]
+        chain=RetailChain.SOK, external_id=store_dict["id"], name=store_dict["name"]
     )
     prices = [
-        Price(
-            store_id=store.id,
-            **item
-        ) for item in store_dict["products"]["items"]
+        Price(store_id=store.id, **item) for item in store_dict["products"]["items"]
     ]
     return store, prices

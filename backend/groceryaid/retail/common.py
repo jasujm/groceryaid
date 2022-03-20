@@ -1,7 +1,9 @@
 """Common definitions for retail chains"""
 
+import decimal
 import enum
 import uuid
+import typing
 
 import pydantic
 
@@ -12,7 +14,7 @@ class RetailChain(enum.Enum):
     Each chain is assumed to have distinct API to fetch products/prices.
     """
 
-    SOK = "sok"
+    SOK = enum.auto()
 
 
 # TODO: store in environment
@@ -29,11 +31,13 @@ def _get_store_id(chain: RetailChain, external_id) -> uuid.UUID:
 
 class Store(pydantic.BaseModel):
     """A grocery store in chain supported by the app"""
+
     id: uuid.UUID
     chain: RetailChain
-    external_id: pydantic.constr(max_length=31)
-    name: pydantic.constr(max_length=255)
+    external_id: typing.Annotated[str, pydantic.Field(max_length=31)]
+    name: typing.Annotated[str, pydantic.Field(max_length=255)]
 
+    # pylint: disable=all
     @pydantic.root_validator(pre=True)
     def create_store_id(cls, values):
         if "id" not in values:
@@ -43,7 +47,10 @@ class Store(pydantic.BaseModel):
 
 class Price(pydantic.BaseModel):
     """Price of a single item in a store"""
+
     store_id: uuid.UUID
-    ean: pydantic.constr(regex=r"\d{13}")
-    name: pydantic.constr(max_length=255)
-    price: pydantic.condecimal(max_digits=7, decimal_places=2)
+    ean: typing.Annotated[str, pydantic.Field(regex=r"\d{13}")]
+    name: typing.Annotated[str, pydantic.Field(max_length=255)]
+    price: typing.Annotated[
+        decimal.Decimal, pydantic.Field(max_digits=7, decimal_places=2)
+    ]

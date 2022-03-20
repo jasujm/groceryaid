@@ -1,19 +1,23 @@
-"""Database services"""
+"""Database setup
 
-import asyncio
+This module contains the basic SQLAlchemy definitions needed to setup the
+database environment.
+"""
+
+import typing
 
 import sqlalchemy
 import sqlalchemy.ext.asyncio as sqlaio
 import sqlalchemy_utils.types as sqlt
 
-from .retail import RetailChain
+from ..retail import RetailChain
 
 # TODO: store URL in environment
-engine = sqlaio.create_async_engine(
+_engine = sqlaio.create_async_engine(
     "postgresql+asyncpg://groceryaid@localhost:5432/groceryaid"
 )
 
-meta = sqlalchemy.MetaData()
+_meta = sqlalchemy.MetaData()
 
 
 def _get_timestamp_columns():
@@ -36,18 +40,18 @@ def _get_timestamp_columns():
 
 stores = sqlalchemy.Table(
     "stores",
-    meta,
+    _meta,
     sqlalchemy.Column("id", sqlt.uuid.UUIDType, primary_key=True),
     sqlalchemy.Column("chain", sqlalchemy.Enum(RetailChain), nullable=False),
     sqlalchemy.Column("external_id", sqlalchemy.String(31), nullable=False),
     sqlalchemy.Column("name", sqlalchemy.String(255), nullable=False),
     *_get_timestamp_columns(),
-    sqlalchemy.UniqueConstraint("chain", "external_id")
+    sqlalchemy.UniqueConstraint("chain", "external_id"),
 )
 
 prices = sqlalchemy.Table(
     "prices",
-    meta,
+    _meta,
     sqlalchemy.Column(
         "store_id",
         sqlt.uuid.UUIDType,
@@ -61,11 +65,17 @@ prices = sqlalchemy.Table(
 )
 
 
+def get_engine() -> sqlaio.AsyncEngine:
+    """Return the default database engine"""
+    return _engine
+
+
+def get_connection() -> typing.AsyncContextManager[sqlaio.AsyncConnection]:
+    """Return database connection"""
+    return get_engine().begin()
+
+
 async def init():
     """Initialize database"""
-    async with engine.begin() as conn:
-        await conn.run_sync(meta.create_all)
-
-
-if __name__ == "__main__":
-    asyncio.run(init())
+    async with get_engine().begin() as conn:
+        await conn.run_sync(_meta.create_all)
