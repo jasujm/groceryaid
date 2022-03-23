@@ -1,3 +1,3 @@
 """Retail services"""
 
-from .common import RetailChain, Store, Price
+from .common import RetailChain, Store, Product

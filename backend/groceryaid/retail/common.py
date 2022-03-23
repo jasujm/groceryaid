@@ -13,7 +13,7 @@ from ..settings import settings
 class RetailChain(enum.Enum):
     """Identifies grocery store chain
 
-    Each chain is assumed to have distinct API to fetch products/prices.
+    Each chain is assumed to have distinct API to fetch stores and products.
     """
 
     FAKER = "faker"
@@ -46,8 +46,13 @@ class Store(pydantic.BaseModel):
         return values
 
 
-class Price(pydantic.BaseModel):
-    """Price of a single item in a store"""
+class Product(pydantic.BaseModel):
+    """A single product within a given store
+
+    There is no store-independent product model.  Although the same product may
+    (and often is) sold in different stores, it may have different name or
+    price.
+    """
 
     store_id: uuid.UUID
     ean: typing.Annotated[str, pydantic.Field(regex=r"\d{13}")]

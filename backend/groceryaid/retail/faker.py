@@ -1,11 +1,11 @@
-"""Utilities for generating fake store and price data for testing and development"""
+"""Utilities for generating fake store and product data for testing and development"""
 
 
 import contextlib
 import functools
 import typing
 
-from .common import Store, Price, RetailChain
+from .common import Store, Product, RetailChain
 
 try:
     import factory
@@ -16,9 +16,9 @@ except ImportError:
 
         # pylint: disable=all
         def StoreFactory():
-            raise RuntimeError("StoreFactory and PriceFactory require factory module")
+            raise RuntimeError("StoreFactory and ProductFactory require factory module")
 
-        PriceFactory = StoreFactory
+        ProductFactory = StoreFactory
 
 else:
 
@@ -32,11 +32,11 @@ else:
         external_id = factory.Sequence(str)
         name = factory.Faker("city")
 
-    class PriceFactory(factory.Factory):
-        """Price factory"""
+    class ProductFactory(factory.Factory):
+        """Product factory"""
 
         class Meta:
-            model = Price
+            model = Product
 
         store_id = factory.Faker("uuid4")
         ean = factory.Faker("ean")
@@ -45,7 +45,7 @@ else:
 
 
 class StoreFetcher(contextlib.AbstractAsyncContextManager):
-    """Utility class for generating fake store and price data
+    """Utility class for generating fake store and product data
 
     This class conforms to the general store fetcher protocol. Instead of
     accessing an external API, is simply generates some fake data for
@@ -57,7 +57,7 @@ class StoreFetcher(contextlib.AbstractAsyncContextManager):
 
     def __init__(self, store_external_id: str):
         self.store = StoreFactory(external_id=store_external_id)
-        self.prices = PriceFactory.build_batch(20, store_id=self.store.id)
+        self.products = ProductFactory.build_batch(20, store_id=self.store.id)
 
     async def __aexit__(self, *args):
         pass
@@ -66,12 +66,12 @@ class StoreFetcher(contextlib.AbstractAsyncContextManager):
         """Get the fake store"""
         return self.store
 
-    async def get_prices_in_batches(
+    async def get_products_in_batches(
         self,
-    ) -> typing.AsyncIterable[list[Price]]:
-        """Get the faked prices"""
-        yield self.prices[:10]
-        yield self.prices[10:]
+    ) -> typing.AsyncIterable[list[Product]]:
+        """Get the faked products"""
+        yield self.products[:10]
+        yield self.products[10:]
 
 
 @functools.cache

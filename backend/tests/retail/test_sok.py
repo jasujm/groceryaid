@@ -4,15 +4,15 @@ import unittest.mock
 import pytest
 
 from groceryaid.retail import RetailChain
-from groceryaid.retail.faker import StoreFactory, PriceFactory
+from groceryaid.retail.faker import StoreFactory, ProductFactory
 from groceryaid.retail.sok import StoreFetcher
 
 
 @pytest.mark.asyncio
-async def test_fetch_and_store_prices(monkeypatch):
+async def test_fetch_and_store_products(monkeypatch):
 
     store = StoreFactory(chain=RetailChain.SOK)
-    prices = PriceFactory.build_batch(6, store_id=store.id)
+    products = ProductFactory.build_batch(6, store_id=store.id)
 
     def _batch(from_: int):
         return {
@@ -21,8 +21,12 @@ async def test_fetch_and_store_prices(monkeypatch):
                 "name": store.name,
                 "products": {
                     "items": [
-                        {"ean": price.ean, "name": price.name, "price": price.price}
-                        for price in prices[from_ : from_ + 3]
+                        {
+                            "ean": product.ean,
+                            "name": product.name,
+                            "price": product.price,
+                        }
+                        for product in products[from_ : from_ + 3]
                     ],
                 },
             }
@@ -40,7 +44,7 @@ async def test_fetch_and_store_prices(monkeypatch):
 
     async with StoreFetcher(store.external_id) as fetcher:
         assert fetcher.get_store() == store
-        assert [price async for price in fetcher.get_prices_in_batches()] == [
-            prices[:3],
-            prices[3:],
+        assert [product async for product in fetcher.get_products_in_batches()] == [
+            products[:3],
+            products[3:],
         ]

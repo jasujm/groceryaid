@@ -47,8 +47,8 @@ stores = sqlalchemy.Table(
     sqlalchemy.UniqueConstraint("chain", "external_id"),
 )
 
-prices = sqlalchemy.Table(
-    "prices",
+products = sqlalchemy.Table(
+    "products",
     _meta,
     sqlalchemy.Column(
         "store_id",

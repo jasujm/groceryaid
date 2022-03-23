@@ -11,8 +11,8 @@ store_modules = {
 }
 
 
-async def fetch_and_save_stores_and_prices(chain: RetailChain):
-    """Fetch all stores and prices via external APIs"""
+async def fetch_and_save_stores_and_products(chain: RetailChain):
+    """Fetch all stores and products via external APIs"""
     module = store_modules[chain]
     for store_external_id in module.get_store_external_ids():
         async with db.get_connection() as connection, module.StoreFetcher(
@@ -20,7 +20,9 @@ async def fetch_and_save_stores_and_prices(chain: RetailChain):
         ) as fetcher:
             store = fetcher.get_store()
             await db.create(db.stores, store.dict(), connection=connection)
-            async for prices in fetcher.get_prices_in_batches():
+            async for products in fetcher.get_products_in_batches():
                 await db.create(
-                    db.prices, [price.dict() for price in prices], connection=connection
+                    db.products,
+                    [product.dict() for product in products],
+                    connection=connection,
                 )

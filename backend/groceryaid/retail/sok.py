@@ -1,4 +1,4 @@
-"""Utilities for fetching S-Group store and price data"""
+"""Utilities for fetching S-Group store and product data"""
 
 import contextlib
 import typing
@@ -7,13 +7,13 @@ import gql
 import gql.client
 import gql.transport.aiohttp as gql_aiohttp
 
-from .common import RetailChain, Store, Price
+from .common import RetailChain, Store, Product
 
 from ..settings import settings
 
 _store_and_products_query = gql.gql(
     """
-    query GetStoreAndPrices($store_id: ID!, $from: Int, $limit: Int) {
+    query GetStoreAndProducts($store_id: ID!, $from: Int, $limit: Int) {
       store(id: $store_id) {
         id,
         name,
@@ -35,7 +35,7 @@ def _get_gql_client() -> gql.Client:
 
 
 class StoreFetcher(contextlib.AbstractAsyncContextManager):
-    """Utility class for fetching store and price info via S-Group API
+    """Utility class for fetching store and product info via S-Group API
 
     Parameters:
         store_external_id: The external (S-Group API specific) id of the store
@@ -67,23 +67,23 @@ class StoreFetcher(contextlib.AbstractAsyncContextManager):
         """Get the fetched store"""
         return self._store
 
-    async def get_prices_in_batches(self) -> typing.AsyncIterable[list[Price]]:
-        """Get prices in batches
+    async def get_products_in_batches(self) -> typing.AsyncIterable[list[Product]]:
+        """Get products in batches
 
         The fetcher makes calls to external API and fetches in batches whose
-        size is determined in the settings. It ends when either prices in
+        size is determined in the settings. It ends when either products in
         external API are exhausted or the setting specific limit is reached.
         """
-        prices = self._parse_prices()
-        yield prices
-        while prices and (
-            not settings.sok_prices_fetch_limit
-            or self._cursor < settings.sok_prices_fetch_limit
+        products = self._parse_products()
+        yield products
+        while products and (
+            not settings.sok_products_fetch_limit
+            or self._cursor < settings.sok_products_fetch_limit
         ):
             await self._fetch_next()
-            prices = self._parse_prices()
-            if prices:
-                yield prices
+            products = self._parse_products()
+            if products:
+                yield products
 
     async def _fetch_next(self):
         self._gql_result = await self._gql_connection.execute(
@@ -91,16 +91,16 @@ class StoreFetcher(contextlib.AbstractAsyncContextManager):
             {
                 "store_id": self._store_external_id,
                 "from": self._cursor,
-                "limit": settings.sok_prices_batch_size,
+                "limit": settings.sok_products_batch_size,
             },
         )
         store = self._gql_result["store"]
         self._cursor += len(store["products"]["items"])
         return store
 
-    def _parse_prices(self):
+    def _parse_products(self):
         items = self._gql_result["store"]["products"]["items"]
-        return [Price(store_id=self._store.id, **item) for item in items]
+        return [Product(store_id=self._store.id, **item) for item in items]
 
 
 def get_store_external_ids() -> list[str]:
