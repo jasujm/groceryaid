@@ -14,6 +14,7 @@ class RetailChain(enum.Enum):
     Each chain is assumed to have distinct API to fetch products/prices.
     """
 
+    FAKER = enum.auto()
     SOK = enum.auto()
 
 

@@ -2,15 +2,20 @@
 
 from .. import db
 
-from . import sok
+from . import sok, faker
+from .common import RetailChain
 
-from ..settings import settings
+store_modules = {
+    RetailChain.FAKER: faker,
+    RetailChain.SOK: sok,
+}
 
 
-async def fetch_and_save_stores_and_prices():
+async def fetch_and_save_stores_and_prices(chain: RetailChain):
     """Fetch all stores and prices via external APIs"""
-    for store_external_id in settings.sok_store_ids:
-        async with db.get_connection() as connection, sok.StoreFetcher(
+    module = store_modules[chain]
+    for store_external_id in module.get_store_external_ids():
+        async with db.get_connection() as connection, module.StoreFetcher(
             store_external_id
         ) as fetcher:
             store = fetcher.get_store()

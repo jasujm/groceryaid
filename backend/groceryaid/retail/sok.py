@@ -1,4 +1,4 @@
-"""Retail definitions for S-Group (SOK)"""
+"""Utilities for fetching S-Group store and price data"""
 
 import contextlib
 import typing
@@ -101,3 +101,8 @@ class StoreFetcher(contextlib.AbstractAsyncContextManager):
     def _parse_prices(self):
         items = self._gql_result["store"]["products"]["items"]
         return [Price(store_id=self._store.id, **item) for item in items]
+
+
+def get_store_external_ids() -> list[str]:
+    """Return list of known S-Group stores"""
+    return settings.sok_store_ids

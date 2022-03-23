@@ -4,9 +4,8 @@ import unittest.mock
 import pytest
 
 from groceryaid.retail import RetailChain
+from groceryaid.retail.faker import StoreFactory, PriceFactory
 from groceryaid.retail.sok import StoreFetcher
-
-from tests.factories import StoreFactory, PriceFactory
 
 
 @pytest.mark.asyncio

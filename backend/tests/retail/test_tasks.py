@@ -1,48 +1,32 @@
 import contextlib
+import itertools
+import unittest.mock
 
 import pytest
 
 import groceryaid.db as db
-from groceryaid.retail import Store, Price
-import groceryaid.retail.sok
+from groceryaid.retail import Store, Price, RetailChain
+import groceryaid.retail.faker as retail_faker
 from groceryaid.retail.tasks import fetch_and_save_stores_and_prices
-from groceryaid.settings import settings
-
-from tests.factories import StoreFactory, PriceFactory
 
 
 @pytest.mark.asyncio
 async def test_fetch_store_and_prices(monkeypatch):
-    store = StoreFactory()
-    prices = PriceFactory.build_batch(6, store_id=store.id)
+    store_external_ids = retail_faker.get_store_external_ids()
+    fetchers = {eid: retail_faker.StoreFetcher(eid) for eid in store_external_ids}
 
-    class _FakeStoreFetcher(contextlib.AbstractAsyncContextManager):
-        def __init__(self, store_external_id):
-            assert store_external_id == store.external_id
+    get_store_fetcher = unittest.mock.Mock(side_effect=lambda eid: fetchers[eid])
 
-        async def __aexit__(self, *args):
-            return
+    monkeypatch.setattr(retail_faker, "StoreFetcher", get_store_fetcher)
 
-        @staticmethod
-        def get_store():
-            return store
-
-        @staticmethod
-        async def get_prices_in_batches():
-            yield prices[:3]
-            yield prices[3:]
-
-    def _create_fake_fetcher(store_external_id):
-        assert store.external_id == store_external_id
-        return fake_fetcher
-
-    monkeypatch.setattr(settings, "sok_store_ids", [store.external_id])
-    monkeypatch.setattr(groceryaid.retail.sok, "StoreFetcher", _FakeStoreFetcher)
-
-    await fetch_and_save_stores_and_prices()
+    await fetch_and_save_stores_and_prices(RetailChain.FAKER)
 
     stores_in_db = await db.read(db.stores)
-    assert [Store(**row) for row in stores_in_db] == [store]
+    assert [Store(**row) for row in stores_in_db] == [
+        fetcher.store for fetcher in fetchers.values()
+    ]
 
     prices_in_db = await db.read(db.prices)
-    assert [Price(**row) for row in prices_in_db] == prices
+    assert [Price(**row) for row in prices_in_db] == list(
+        itertools.chain.from_iterable(fetcher.prices for fetcher in fetchers.values())
+    )
