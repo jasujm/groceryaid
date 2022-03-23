@@ -1,5 +1,7 @@
 """Settings management"""
 
+import uuid
+
 import pydantic
 
 
@@ -7,6 +9,11 @@ class Settings(pydantic.BaseSettings):
     """Grocery Aid app settings"""
 
     database_url: pydantic.PostgresDsn = "postgresql+asyncpg://test@localhost/test"  # type: ignore
+
+    store_root_namespace: uuid.UUID = pydantic.Field(
+        default_factory=uuid.uuid4,
+        description="The root namespace of UUID hierarchy used in the application",
+    )
 
     # S-Group specific configuration
     sok_api_url: pydantic.AnyHttpUrl = "http://localhost/sok"  # type: ignore

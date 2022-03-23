@@ -7,6 +7,8 @@ import typing
 
 import pydantic
 
+from ..settings import settings
+
 
 class RetailChain(enum.Enum):
     """Identifies grocery store chain
@@ -18,11 +20,9 @@ class RetailChain(enum.Enum):
     SOK = "sok"
 
 
-# TODO: store in environment
-_store_root_namespace = uuid.uuid4()
-
 _store_namespaces = {
-    chain: uuid.uuid5(_store_root_namespace, str(chain)) for chain in RetailChain
+    chain: uuid.uuid5(settings.store_root_namespace, chain.value)
+    for chain in RetailChain
 }
 
 
