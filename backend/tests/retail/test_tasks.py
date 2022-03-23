@@ -21,12 +21,12 @@ async def test_fetch_store_and_products(monkeypatch):
 
     await fetch_and_save_stores_and_products(RetailChain.FAKER)
 
-    stores_in_db = await db.read(db.stores)
+    stores_in_db = await db.select(db.stores)
     assert [Store(**row) for row in stores_in_db] == [
         fetcher.store for fetcher in fetchers.values()
     ]
 
-    products_in_db = await db.read(db.products)
+    products_in_db = await db.select(db.products)
     assert [Product(**row) for row in products_in_db] == list(
         itertools.chain.from_iterable(fetcher.products for fetcher in fetchers.values())
     )

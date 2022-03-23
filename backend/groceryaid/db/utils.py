@@ -14,6 +14,12 @@ import sqlalchemy.ext.asyncio as sqlaio
 from . import _db
 
 
+def _to_sequence(value):
+    if isinstance(value, typing.Sequence) and not isinstance(value, (str, bytes)):
+        return value
+    return [value]
+
+
 def _begin_connection(
     connection: typing.Optional[sqlaio.AsyncConnection] = None,
 ) -> typing.AsyncContextManager[sqlaio.AsyncConnection]:
@@ -29,7 +35,7 @@ async def execute(
 ):
     """Execute a SQL expression in the default database
 
-    Parameters:
+    Keyword Arguments:
        connection: Database connection, or `None` to use a fresh connection
     """
     async with _begin_connection(connection) as conn:
@@ -47,12 +53,46 @@ async def create(
     Parameters:
         table: Database table
         objs: Object/objects to insert
+
+    Keyword Arguments:
         connection: Database connection, or `None` to use a fresh connection
     """
     return await execute(table.insert(), objs, connection=connection)
 
 
 async def read(
+    table: sqlalchemy.Table,
+    pk: typing.Any | typing.Sequence[typing.Any],
+    *,
+    columns: typing.Optional[typing.Sequence[sqlalchemy.Column]] = None,
+    connection: typing.Optional[sqlaio.AsyncConnection] = None,
+) -> sqlalchemy.engine.CursorResult:  # type: ignore
+    """Read a row from ``table`` by primary key
+
+    Parameters:
+       table: The database table
+       pk: Primary key value
+
+    Keyword Arguments:
+       columns: The list of columns to select (defaults to whole table)
+       connection: Database connection, or `None` to use a fresh connection
+
+    Returns:
+       The resulting row
+    """
+    if columns:
+        select_expr = sqlalchemy.select(columns)
+    else:
+        select_expr = table.select()
+    pk_parts = _to_sequence(pk)
+    result = await execute(
+        select_expr.where(*(c == p for (c, p) in zip(table.primary_key, pk_parts))),
+        connection=connection,
+    )
+    return result.first()
+
+
+async def select(
     table: sqlalchemy.Table,
     *,
     connection: typing.Optional[sqlaio.AsyncConnection] = None,
@@ -61,9 +101,11 @@ async def read(
 
     Parameters:
        table: The database table
+
+    Keyword Arguments:
        connection: Database connection, or `None` to use a fresh connection
 
     Returns:
-       The result object
+       The resulting rows
     """
     return await execute(table.select(), connection=connection)
