@@ -46,11 +46,12 @@ async def create_store_visit(storevisit: StoreVisit):
         await db.create(
             db.storevisits, storevisit.dict(exclude={"cart"}), connection=connection
         )
-        await db.create(
-            db.cartproducts,
-            [
-                {"storevisit_id": storevisit.id, **cartproduct.dict()}
-                for cartproduct in storevisit.cart
-            ],
-            connection=connection,
-        )
+        if storevisit.cart:
+            await db.create(
+                db.cartproducts,
+                [
+                    {"storevisit_id": storevisit.id, **cartproduct.dict()}
+                    for cartproduct in storevisit.cart
+                ],
+                connection=connection,
+            )

@@ -75,6 +75,10 @@ else:
         store_id = factory.Faker("uuid4")
         cart = factory.LazyFunction(lambda: CartProductFactory.build_batch(5))
 
+        @factory.post_generation
+        def _sort_cart(self, *args, **kwargs):
+            self.cart.sort(key=lambda cp: cp.ean)
+
 
 class StoreFetcher(contextlib.AbstractAsyncContextManager):
     """Utility class for generating fake store and product data

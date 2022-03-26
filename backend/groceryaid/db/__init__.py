@@ -9,4 +9,4 @@ from ._db import (
     storevisits,
     cartproducts,
 )
-from .utils import execute, create, select, read
+from .utils import execute, create, select, read, delete

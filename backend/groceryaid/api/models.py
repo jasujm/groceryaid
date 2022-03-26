@@ -67,13 +67,16 @@ class CartProduct(pydantic.BaseModel):
     quantity: pydantic.PositiveInt
 
 
-class StoreVisit(ReferrableModel):
+class _StoreVisitBase(pydantic.BaseModel):
+    store: hrefs.Href[Store]
+    cart: list[CartProduct]
+
+
+class StoreVisit(_StoreVisitBase, ReferrableModel):
     """State of a single store visit"""
 
     self: hrefs.Href["StoreVisit"]
     id: uuid.UUID
-    store: hrefs.Href[Store]
-    cart: list[CartProduct]
 
     # pylint: disable=all
     @pydantic.root_validator(pre=True)
@@ -86,3 +89,9 @@ class StoreVisit(ReferrableModel):
 
 
 StoreVisit.update_forward_refs()
+
+
+class StoreVisitCreate(_StoreVisitBase):
+    """Payload for creating a store visit"""
+
+    cart: list[CartProduct] = []

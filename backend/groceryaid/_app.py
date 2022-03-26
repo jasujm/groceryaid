@@ -9,4 +9,4 @@ app = fastapi.FastAPI()
 
 app.add_middleware(HrefMiddleware)
 
-app.mount("/api/v1", api.app)
+app.include_router(api.app, prefix="/api/v1")

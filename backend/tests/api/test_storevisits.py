@@ -1,6 +1,7 @@
 """Test store visit API"""
 
 import fastapi
+import pytest
 
 
 def test_get_store_visit(testclient, storevisit):
@@ -25,3 +26,37 @@ def test_get_store_visit(testclient, storevisit):
 def test_get_store_visit_not_found(testclient, faker):
     response = testclient.get(f"http://testserver/api/v1/storevisits/{faker.uuid4()}")
     assert response.status_code == fastapi.status.HTTP_404_NOT_FOUND
+
+
+@pytest.mark.asyncio
+async def test_post_store_visit(testclient, store, product, faker):
+    store_url = f"http://testserver/api/v1/stores/{store.id}"
+    product_url = f"{store_url}/products/{product.ean}"
+    quantity = faker.pyint(min_value=1)
+    response = testclient.post(
+        "http://testserver/api/v1/storevisits",
+        json={
+            "store": store_url,
+            "cart": [
+                {
+                    "product": product_url,
+                    "quantity": quantity,
+                }
+            ],
+        },
+    )
+    assert response.status_code == fastapi.status.HTTP_201_CREATED, response.text
+    storevisit_url = response.headers["Location"]
+    expected_storevisit_id = storevisit_url.split("/")[-1]
+    response = testclient.get(storevisit_url)
+    assert response.json() == {
+        "self": storevisit_url,
+        "id": expected_storevisit_id,
+        "store": store_url,
+        "cart": [
+            {
+                "product": product_url,
+                "quantity": quantity,
+            }
+        ],
+    }

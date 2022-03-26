@@ -67,7 +67,7 @@ async def read(
     columns: typing.Optional[typing.Sequence[sqlalchemy.Column]] = None,
     connection: typing.Optional[sqlaio.AsyncConnection] = None,
 ) -> sqlalchemy.engine.CursorResult:  # type: ignore
-    """Read a row from ``table`` by primary key
+    """Read a row(s) from ``table`` by primary key
 
     Parameters:
        table: The database table
@@ -109,3 +109,26 @@ async def select(
        The resulting rows
     """
     return await execute(table.select(), connection=connection)
+
+
+async def delete(
+    table: sqlalchemy.Table,
+    pk: typing.Any | typing.Sequence[typing.Any],
+    *,
+    connection: typing.Optional[sqlaio.AsyncConnection] = None,
+):
+    """Delete row(s) from ``table`` by primary key
+
+    Parameters:
+       table: The database table
+       pk: Primary key value
+
+    Keyword Arguments:
+       columns: The list of columns to select (defaults to whole table)
+       connection: Database connection, or `None` to use a fresh connection
+    """
+    pk_parts = _to_sequence(pk)
+    await execute(
+        table.delete().where(*(c == p for (c, p) in zip(table.primary_key, pk_parts))),
+        connection=connection,
+    )
