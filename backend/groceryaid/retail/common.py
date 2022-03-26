@@ -63,3 +63,14 @@ class Product(pydantic.BaseModel):
     ean: Ean
     name: Name
     price: Price
+
+
+class CartProduct(pydantic.BaseModel):
+    ean: Ean
+    quantity: pydantic.PositiveInt
+
+
+class StoreVisit(pydantic.BaseModel):
+    id: typing.Annotated[uuid.UUID, pydantic.Field(default_factory=uuid.uuid4)]
+    store_id: uuid.UUID
+    cart: list[CartProduct]

@@ -63,6 +63,30 @@ products = sqlalchemy.Table(
 )
 
 
+storevisits = sqlalchemy.Table(
+    "storevisits",
+    _meta,
+    sqlalchemy.Column("id", sqlt.uuid.UUIDType, primary_key=True),
+    sqlalchemy.Column(
+        "store_id",
+        sqlalchemy.ForeignKey("stores.id"),
+    ),
+    *_get_timestamp_columns(),
+)
+
+
+cartproducts = sqlalchemy.Table(
+    "cartproducts",
+    _meta,
+    sqlalchemy.Column(
+        "storevisit_id", sqlalchemy.ForeignKey("storevisits.id"), primary_key=True
+    ),
+    sqlalchemy.Column("ean", sqlalchemy.CHAR(13), primary_key=True),
+    sqlalchemy.Column("quantity", sqlalchemy.Integer, nullable=False),
+    *_get_timestamp_columns(),
+)
+
+
 def get_engine() -> sqlaio.AsyncEngine:
     """Return the default database engine"""
     return _engine

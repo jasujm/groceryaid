@@ -58,3 +58,31 @@ class Product(ReferrableModel):
 
 
 Product.update_forward_refs()
+
+
+class CartProduct(pydantic.BaseModel):
+    """Product and quantity"""
+
+    product: hrefs.Href[Product]
+    quantity: pydantic.PositiveInt
+
+
+class StoreVisit(ReferrableModel):
+    """State of a single store visit"""
+
+    self: hrefs.Href["StoreVisit"]
+    id: uuid.UUID
+    store: hrefs.Href[Store]
+    cart: list[CartProduct]
+
+    # pylint: disable=all
+    @pydantic.root_validator(pre=True)
+    def _populate_self(cls, values):
+        values["self"] = values["id"]
+        return values
+
+    class Config:
+        details_view = "get_store_visit"
+
+
+StoreVisit.update_forward_refs()

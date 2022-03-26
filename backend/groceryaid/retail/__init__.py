@@ -1,3 +1,13 @@
 """Retail services"""
 
-from .common import RetailChain, Store, Product, ExternalId, Name, Ean, Price
+from .common import (
+    RetailChain,
+    Store,
+    Product,
+    StoreVisit,
+    CartProduct,
+    ExternalId,
+    Name,
+    Ean,
+    Price,
+)

@@ -1,10 +1,11 @@
-import contextlib
+"""Task tests"""
+
 import itertools
 import unittest.mock
 
 import pytest
 
-import groceryaid.db as db
+from groceryaid import db
 from groceryaid.retail import Store, Product, RetailChain
 import groceryaid.retail.faker as retail_faker
 from groceryaid.retail.tasks import fetch_and_save_stores_and_products

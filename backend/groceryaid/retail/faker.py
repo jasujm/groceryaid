@@ -5,7 +5,7 @@ import contextlib
 import functools
 import typing
 
-from .common import Store, Product, RetailChain
+from .common import RetailChain, Store, Product, StoreVisit, CartProduct
 
 try:
     import factory
@@ -15,10 +15,23 @@ except ImportError:
     if not typing.TYPE_CHECKING:
 
         # pylint: disable=all
-        def StoreFactory():
-            raise RuntimeError("StoreFactory and ProductFactory require factory module")
+        class Factory:
+            def __init__(self, *args, **kwargs):
+                raise RuntimeError(
+                    f"Using {self.__class__.__name__} requires factory module"
+                )
 
-        ProductFactory = StoreFactory
+        class StoreFactory(Factory):
+            pass
+
+        class ProductFactory(Factory):
+            pass
+
+        class CartProductFactory(Factory):
+            pass
+
+        class StoreVisitFactory(Factory):
+            pass
 
 else:
 
@@ -42,6 +55,25 @@ else:
         ean = factory.Faker("ean")
         name = factory.Sequence(lambda n: f"Product {n}")
         price = factory.Faker("pydecimal", positive=True, max_value=10, right_digits=2)
+
+    class CartProductFactory(factory.Factory):
+        """Cart product factory"""
+
+        class Meta:
+            model = CartProduct
+
+        ean = factory.Faker("ean")
+        quantity = factory.Faker("pyint", min_value=1, max_value=5)
+
+    class StoreVisitFactory(factory.Factory):
+        """Store visit factory"""
+
+        class Meta:
+            model = StoreVisit
+
+        id = factory.Faker("uuid4")
+        store_id = factory.Faker("uuid4")
+        cart = factory.LazyFunction(lambda: CartProductFactory.build_batch(5))
 
 
 class StoreFetcher(contextlib.AbstractAsyncContextManager):

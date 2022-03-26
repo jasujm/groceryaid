@@ -1,3 +1,5 @@
+"""Test S-Group (SOK) services"""
+
 import contextlib
 import unittest.mock
 

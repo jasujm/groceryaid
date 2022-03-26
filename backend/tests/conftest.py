@@ -8,7 +8,13 @@ import pytest_asyncio
 import sqlalchemy.ext.asyncio as sqlaio
 
 from groceryaid import db
-from groceryaid.retail.faker import StoreFactory, ProductFactory
+from groceryaid.retail import storevisits
+from groceryaid.retail.faker import (
+    StoreFactory,
+    ProductFactory,
+    CartProductFactory,
+    StoreVisitFactory,
+)
 
 
 @pytest_asyncio.fixture(autouse=True)
@@ -40,3 +46,17 @@ async def products(store):
 def product(products):
     """Return a single product that will also be inserted into the database"""
     return random.choice(products)
+
+
+@pytest_asyncio.fixture
+async def storevisit(store, products):
+    """Returns a store visit that will also be inserted into the database"""
+    sample_products = random.sample(products, 5)
+    cartproducts = [CartProductFactory(ean=product.ean) for product in sample_products]
+    cartproducts.sort(key=lambda cp: cp.ean)
+    storevisit = StoreVisitFactory(
+        store_id=store.id,
+        cart=cartproducts,
+    )
+    await storevisits.create_store_visit(storevisit)
+    return storevisit

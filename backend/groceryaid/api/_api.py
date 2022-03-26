@@ -2,7 +2,7 @@
 
 import fastapi
 
-from . import stores
+from . import stores, storevisits
 
 app = fastapi.FastAPI(
     title="Grocery Aid API",
@@ -10,3 +10,4 @@ app = fastapi.FastAPI(
 )
 
 app.include_router(stores.router, prefix="/stores", tags=["stores"])
+app.include_router(storevisits.router, prefix="/storevisits", tags=["storevisits"])
