@@ -23,9 +23,18 @@ def _to_sequence(value):
     return [value]
 
 
-def _begin_connection(
+def begin_connection(
     connection: typing.Optional[sqlaio.AsyncConnection] = None,
 ) -> typing.AsyncContextManager[sqlaio.AsyncConnection]:
+    """Begin transaction, or continue an existing one
+
+    Arguments:
+        connection: Database connection, or `None` to use a fresh connection
+
+    Returns:
+        `connection` wrapped in null context manager if it exists, otherwise a new
+        connection
+    """
     if connection:
         return contextlib.nullcontext(connection)
     return _db.get_connection()
@@ -41,7 +50,7 @@ async def execute(
     Keyword Arguments:
        connection: Database connection, or `None` to use a fresh connection
     """
-    async with _begin_connection(connection) as conn:
+    async with begin_connection(connection) as conn:
         return await conn.execute(*args, **kwargs)
 
 

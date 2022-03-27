@@ -51,40 +51,45 @@ async def post_store_visit(
     """
     Create a new store visit
     """
-    store_id = storevisit.store.key
-    store = await db.read(db.stores, store_id, columns=[db.stores.c.id])
-    if store is None:
-        raise fastapi.HTTPException(
-            status_code=fastapi.status.HTTP_400_BAD_REQUEST,
-            detail=f"Cannot create store visit with unknown store: {store_id!r}",
+    async with db.get_connection() as connection:
+        store_id = storevisit.store.key
+        store = await db.read(
+            db.stores, store_id, columns=[db.stores.c.id], connection=connection
         )
-    product_eans = set(
-        _get_cart_product_ean(cartproduct) for cartproduct in storevisit.cart
-    )
-    known_product_eans = set(
-        row[0]
-        for row in await db.execute(
-            sqlalchemy.select([db.products.c.ean]).where(  # type: ignore
-                db.products.c.store_id == store.id, db.products.c.ean.in_(product_eans)
+        if store is None:
+            raise fastapi.HTTPException(
+                status_code=fastapi.status.HTTP_400_BAD_REQUEST,
+                detail=f"Cannot create store visit with unknown store: {store_id!r}",
+            )
+        product_eans = set(
+            _get_cart_product_ean(cartproduct) for cartproduct in storevisit.cart
+        )
+        known_product_eans = set(
+            row[0]
+            for row in await db.execute(
+                sqlalchemy.select([db.products.c.ean]).where(  # type: ignore
+                    db.products.c.store_id == store.id,
+                    db.products.c.ean.in_(product_eans),
+                ),
+                connection=connection,
             )
         )
-    )
-    if missing_eans := product_eans - known_product_eans:
-        raise fastapi.HTTPException(
-            status_code=fastapi.status.HTTP_400_BAD_REQUEST,
-            detail=f"Cannot create store visit with unknown products: {missing_eans!r}",
+        if missing_eans := product_eans - known_product_eans:
+            raise fastapi.HTTPException(
+                status_code=fastapi.status.HTTP_400_BAD_REQUEST,
+                detail=f"Cannot create store visit with unknown products: {missing_eans!r}",
+            )
+        new_storevisit = storevisits.StoreVisit(
+            store_id=store.id,
+            cart=[
+                {
+                    "ean": _get_cart_product_ean(cartproduct),
+                    **cartproduct.dict(exclude={"product", "ean"}),
+                }
+                for cartproduct in storevisit.cart
+            ],
         )
-    new_storevisit = storevisits.StoreVisit(
-        store_id=store.id,
-        cart=[
-            {
-                "ean": _get_cart_product_ean(cartproduct),
-                **cartproduct.dict(exclude={"product", "ean"}),
-            }
-            for cartproduct in storevisit.cart
-        ],
-    )
-    await storevisits.create_store_visit(new_storevisit)
-    response.headers["Location"] = request.url_for(
-        "get_store_visit", id=new_storevisit.id
-    )
+        await storevisits.create_store_visit(new_storevisit, connection=connection)
+        response.headers["Location"] = request.url_for(
+            "get_store_visit", id=new_storevisit.id
+        )
