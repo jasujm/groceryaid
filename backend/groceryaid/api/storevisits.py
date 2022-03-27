@@ -69,7 +69,6 @@ async def post_store_visit(
         store_id=store.id,
         cart=[
             {
-                "store_id": store.id,
                 "ean": cartproduct.product.key.ean,
                 **cartproduct.dict(),
             }

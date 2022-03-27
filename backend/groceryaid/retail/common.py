@@ -82,17 +82,8 @@ class Product(pydantic.BaseModel):
 class CartProduct(pydantic.BaseModel):
     """Product and quantity"""
 
-    product_id: uuid.UUID
-    store_id: typing.Optional[uuid.UUID]
-    ean: typing.Optional[Ean]
+    ean: Ean
     quantity: pydantic.PositiveInt
-
-    # pylint: disable=all
-    @pydantic.root_validator(pre=True)
-    def _create_product_id(cls, values):
-        if "product_id" not in values:
-            values["product_id"] = _get_product_id(values["store_id"], values["ean"])
-        return values
 
 
 class StoreVisit(pydantic.BaseModel):

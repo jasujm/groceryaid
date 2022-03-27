@@ -5,7 +5,7 @@ import typing
 
 import sqlalchemy
 
-from .common import StoreVisit
+from .common import StoreVisit, _get_product_id
 
 from .. import db
 
@@ -30,7 +30,6 @@ async def read_store_visit(id: uuid.UUID) -> typing.Optional[StoreVisit]:
         cartproducts = await db.execute(
             sqlalchemy.select(
                 [
-                    db.cartproducts.c.product_id,
                     db.products.c.ean,
                     db.cartproducts.c.quantity,
                 ]
@@ -59,7 +58,10 @@ async def create_store_visit(storevisit: StoreVisit):
                 [
                     {
                         "storevisit_id": storevisit.id,
-                        **cartproduct.dict(include={"product_id", "quantity"}),
+                        "product_id": _get_product_id(
+                            storevisit.store_id, cartproduct.ean
+                        ),
+                        **cartproduct.dict(exclude={"ean"}),
                     }
                     for cartproduct in storevisit.cart
                 ],

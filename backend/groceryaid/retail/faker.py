@@ -62,8 +62,7 @@ else:
         class Meta:
             model = CartProduct
 
-        product_id = factory.Faker("uuid4")
-        ean = factory.Faker("eane")
+        ean = factory.Faker("ean")
         quantity = factory.Faker("pyint", min_value=1, max_value=5)
 
     class StoreVisitFactory(factory.Factory):
