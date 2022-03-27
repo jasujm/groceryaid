@@ -60,3 +60,34 @@ async def test_post_store_visit(testclient, store, product, faker):
             }
         ],
     }
+
+
+@pytest.mark.asyncio
+async def test_post_store_unknown_store(testclient, faker):
+    store_url = f"http://testserver/api/v1/stores/{faker.uuid4()}"
+    response = testclient.post(
+        "http://testserver/api/v1/storevisits",
+        json={
+            "store": store_url,
+        },
+    )
+    assert response.status_code == fastapi.status.HTTP_400_BAD_REQUEST
+
+
+@pytest.mark.asyncio
+async def test_post_store_unknown_product(testclient, store, faker):
+    store_url = f"http://testserver/api/v1/stores/{store.id}"
+    product_url = f"{store_url}/products/{faker.ean()}"
+    response = testclient.post(
+        "http://testserver/api/v1/storevisits",
+        json={
+            "store": store_url,
+            "cart": [
+                {
+                    "product": product_url,
+                    "quantity": 1,
+                }
+            ],
+        },
+    )
+    assert response.status_code == fastapi.status.HTTP_400_BAD_REQUEST

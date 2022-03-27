@@ -3,9 +3,11 @@
 import uuid
 
 import fastapi
+import sqlalchemy
 
 from .models import StoreVisit, StoreVisitCreate
 
+from .. import db
 from ..retail import storevisits
 
 router = fastapi.APIRouter()
@@ -42,11 +44,32 @@ async def post_store_visit(
     """
     Create a new store visit
     """
+    store_id = storevisit.store.key
+    store = await db.read(db.stores, store_id, columns=[db.stores.c.id])
+    if store is None:
+        raise fastapi.HTTPException(
+            status_code=fastapi.status.HTTP_400_BAD_REQUEST,
+            detail=f"Cannot create store visit with unknown store: {store_id!r}",
+        )
+    product_eans = set(cartproduct.product.key.ean for cartproduct in storevisit.cart)
+    known_product_eans = set(
+        row[0]
+        for row in await db.execute(
+            sqlalchemy.select([db.products.c.ean]).where(  # type: ignore
+                db.products.c.store_id == store.id, db.products.c.ean.in_(product_eans)
+            )
+        )
+    )
+    if missing_eans := product_eans - known_product_eans:
+        raise fastapi.HTTPException(
+            status_code=fastapi.status.HTTP_400_BAD_REQUEST,
+            detail=f"Cannot create store visit with unknown products: {missing_eans!r}",
+        )
     new_storevisit = storevisits.StoreVisit(
-        store_id=storevisit.store.key,
+        store_id=store.id,
         cart=[
             {
-                "store_id": cartproduct.product.key.store.key,
+                "store_id": store.id,
                 "ean": cartproduct.product.key.ean,
                 **cartproduct.dict(),
             }
