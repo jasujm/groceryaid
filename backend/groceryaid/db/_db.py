@@ -50,16 +50,17 @@ stores = sqlalchemy.Table(
 products = sqlalchemy.Table(
     "products",
     _meta,
+    sqlalchemy.Column("id", sqlt.uuid.UUIDType, primary_key=True),
     sqlalchemy.Column(
         "store_id",
-        sqlt.uuid.UUIDType,
         sqlalchemy.ForeignKey("stores.id"),
-        primary_key=True,
+        nullable=False,
     ),
-    sqlalchemy.Column("ean", sqlalchemy.CHAR(13), primary_key=True),
+    sqlalchemy.Column("ean", sqlalchemy.CHAR(13), nullable=False),
     sqlalchemy.Column("name", sqlalchemy.String(255), nullable=False),
     sqlalchemy.Column("price", sqlalchemy.DECIMAL(7, 2), nullable=False),
     *_get_timestamp_columns(),
+    sqlalchemy.UniqueConstraint("store_id", "ean"),
 )
 
 
@@ -81,7 +82,9 @@ cartproducts = sqlalchemy.Table(
     sqlalchemy.Column(
         "storevisit_id", sqlalchemy.ForeignKey("storevisits.id"), primary_key=True
     ),
-    sqlalchemy.Column("ean", sqlalchemy.CHAR(13), primary_key=True),
+    sqlalchemy.Column(
+        "product_id", sqlalchemy.ForeignKey("products.id"), primary_key=True
+    ),
     sqlalchemy.Column("quantity", sqlalchemy.Integer, nullable=False),
     *_get_timestamp_columns(),
 )

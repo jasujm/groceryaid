@@ -27,6 +27,12 @@ def _get_store_id(chain: RetailChain, external_id) -> uuid.UUID:
     return uuid.uuid5(_store_namespaces[chain], str(external_id))
 
 
+def _get_product_id(store_id, ean: str) -> uuid.UUID:
+    if not isinstance(store_id, uuid.UUID):
+        store_id = uuid.UUID(store_id)
+    return uuid.uuid5(store_id, ean)
+
+
 ExternalId = typing.Annotated[str, pydantic.Field(max_length=36)]
 Name = typing.Annotated[str, pydantic.Field(max_length=255)]
 Ean = typing.Annotated[str, pydantic.Field(regex=r"\d{13}")]
@@ -59,18 +65,39 @@ class Product(pydantic.BaseModel):
     name or price.
     """
 
+    id: uuid.UUID
     store_id: uuid.UUID
     ean: Ean
     name: Name
     price: Price
 
+    # pylint: disable=all
+    @pydantic.root_validator(pre=True)
+    def _create_product_id(cls, values):
+        if "id" not in values:
+            values["id"] = _get_product_id(values["store_id"], values["ean"])
+        return values
+
 
 class CartProduct(pydantic.BaseModel):
-    ean: Ean
+    """Product and quantity"""
+
+    product_id: uuid.UUID
+    store_id: typing.Optional[uuid.UUID]
+    ean: typing.Optional[Ean]
     quantity: pydantic.PositiveInt
+
+    # pylint: disable=all
+    @pydantic.root_validator(pre=True)
+    def _create_product_id(cls, values):
+        if "product_id" not in values:
+            values["product_id"] = _get_product_id(values["store_id"], values["ean"])
+        return values
 
 
 class StoreVisit(pydantic.BaseModel):
+    """State of a single store visit"""
+
     id: typing.Annotated[uuid.UUID, pydantic.Field(default_factory=uuid.uuid4)]
     store_id: uuid.UUID
     cart: list[CartProduct]

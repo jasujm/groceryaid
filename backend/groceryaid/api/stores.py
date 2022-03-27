@@ -32,7 +32,9 @@ async def get_product(store_id: uuid.UUID, ean: str):
     Retrieve information about a product identified by store and EAN code
     """
     if product := await db.read(
-        db.products, (store_id, ean), columns=[db.products.c.name, db.products.c.price]
+        db.products,
+        (db.products.c.store_id == store_id) & (db.products.c.ean == ean),
+        columns=[db.products.c.name, db.products.c.price],
     ):
         return {
             "store": store_id,

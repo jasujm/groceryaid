@@ -62,7 +62,8 @@ else:
         class Meta:
             model = CartProduct
 
-        ean = factory.Faker("ean")
+        product_id = factory.Faker("uuid4")
+        ean = factory.Faker("eane")
         quantity = factory.Faker("pyint", min_value=1, max_value=5)
 
     class StoreVisitFactory(factory.Factory):
@@ -71,7 +72,6 @@ else:
         class Meta:
             model = StoreVisit
 
-        id = factory.Faker("uuid4")
         store_id = factory.Faker("uuid4")
         cart = factory.LazyFunction(lambda: CartProductFactory.build_batch(5))
 

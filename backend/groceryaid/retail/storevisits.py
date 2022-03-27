@@ -28,9 +28,16 @@ async def read_store_visit(id: uuid.UUID) -> typing.Optional[StoreVisit]:
         if storevisit is None:
             return None
         cartproducts = await db.execute(
-            sqlalchemy.select([db.cartproducts.c.ean, db.cartproducts.c.quantity])
+            sqlalchemy.select(
+                [
+                    db.cartproducts.c.product_id,
+                    db.products.c.ean,
+                    db.cartproducts.c.quantity,
+                ]
+            )
+            .select_from(db.cartproducts.join(db.products))
             .where(db.cartproducts.c.storevisit_id == id)
-            .order_by(db.cartproducts.c.ean),
+            .order_by(db.products.c.ean),
             connection=connection,
         )
     return StoreVisit(id=id, **storevisit, cart=cartproducts.fetchall())
@@ -50,7 +57,10 @@ async def create_store_visit(storevisit: StoreVisit):
             await db.create(
                 db.cartproducts,
                 [
-                    {"storevisit_id": storevisit.id, **cartproduct.dict()}
+                    {
+                        "storevisit_id": storevisit.id,
+                        **cartproduct.dict(include={"product_id", "quantity"}),
+                    }
                     for cartproduct in storevisit.cart
                 ],
                 connection=connection,

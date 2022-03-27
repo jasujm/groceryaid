@@ -52,7 +52,10 @@ def product(products):
 async def storevisit(store, products):
     """Returns a store visit that will also be inserted into the database"""
     sample_products = random.sample(products, 5)
-    cartproducts = [CartProductFactory(ean=product.ean) for product in sample_products]
+    cartproducts = [
+        CartProductFactory(product_id=product.id, ean=product.ean)
+        for product in sample_products
+    ]
     storevisit = StoreVisitFactory(
         store_id=store.id,
         cart=cartproducts,

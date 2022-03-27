@@ -5,10 +5,13 @@ abstraction layer over common CRUD operations.
 """
 
 import contextlib
+import functools
+import operator
 import typing
 
 import sqlalchemy
 import sqlalchemy.engine
+from sqlalchemy.sql.expression import ColumnElement
 import sqlalchemy.ext.asyncio as sqlaio
 
 from . import _db
@@ -62,7 +65,7 @@ async def create(
 
 async def read(
     table: sqlalchemy.Table,
-    pk: typing.Any | typing.Sequence[typing.Any],
+    pk: typing.Any | typing.Sequence[typing.Any] | ColumnElement,
     *,
     columns: typing.Optional[typing.Sequence[sqlalchemy.Column]] = None,
     connection: typing.Optional[sqlaio.AsyncConnection] = None,
@@ -71,7 +74,7 @@ async def read(
 
     Parameters:
        table: The database table
-       pk: Primary key value
+       pk: Primary key value, or a where clause
 
     Keyword Arguments:
        columns: The list of columns to select (defaults to whole table)
@@ -84,9 +87,15 @@ async def read(
         select_expr = sqlalchemy.select(columns)
     else:
         select_expr = table.select()
-    pk_parts = _to_sequence(pk)
+    if isinstance(pk, ColumnElement):
+        where_expr = pk
+    else:
+        pk_parts = _to_sequence(pk)
+        where_expr = functools.reduce(
+            operator.and_, (c == p for (c, p) in zip(table.primary_key, pk_parts))
+        )
     result = await execute(
-        select_expr.where(*(c == p for (c, p) in zip(table.primary_key, pk_parts))),
+        select_expr.where(where_expr),
         connection=connection,
     )
     return result.first()
