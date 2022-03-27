@@ -60,16 +60,18 @@ class Product(ReferrableModel):
 Product.update_forward_refs()
 
 
-class CartProduct(pydantic.BaseModel):
+class _CartProductBase(pydantic.BaseModel):
+    quantity: pydantic.PositiveInt
+
+
+class CartProduct(_CartProductBase):
     """Product and quantity"""
 
     product: hrefs.Href[Product]
-    quantity: pydantic.PositiveInt
 
 
 class _StoreVisitBase(pydantic.BaseModel):
     store: hrefs.Href[Store]
-    cart: list[CartProduct]
 
 
 class StoreVisit(_StoreVisitBase, ReferrableModel):
@@ -77,6 +79,7 @@ class StoreVisit(_StoreVisitBase, ReferrableModel):
 
     self: hrefs.Href["StoreVisit"]
     id: uuid.UUID
+    cart: list[CartProduct]
 
     # pylint: disable=all
     @pydantic.root_validator(pre=True)
@@ -91,7 +94,25 @@ class StoreVisit(_StoreVisitBase, ReferrableModel):
 StoreVisit.update_forward_refs()
 
 
+class CartProductCreate(_CartProductBase):
+    """Payload for creating a product in cart"""
+
+    ean: typing.Optional[Ean]
+    product: typing.Optional[hrefs.Href[Product]]
+
+    @pydantic.root_validator
+    def _ean_or_product_must_be_set(cls, values):
+        ean = values.get("ean")
+        product = values.get("product")
+        if sum(v is not None for v in (ean, product)) != 1:
+            raise ValueError(
+                "Exactly one of `ean` and `product` must be set. "
+                f"Got: {ean=!r}, {product=!r}"
+            )
+        return values
+
+
 class StoreVisitCreate(_StoreVisitBase):
     """Payload for creating a store visit"""
 
-    cart: list[CartProduct] = []
+    cart: list[CartProductCreate] = []

@@ -63,7 +63,40 @@ async def test_post_store_visit(testclient, store, product, faker):
 
 
 @pytest.mark.asyncio
-async def test_post_store_unknown_store(testclient, faker):
+async def test_post_store_visit_ean_lookup(testclient, store, product, faker):
+    store_url = f"http://testserver/api/v1/stores/{store.id}"
+    quantity = faker.pyint(min_value=1)
+    response = testclient.post(
+        "http://testserver/api/v1/storevisits",
+        json={
+            "store": store_url,
+            "cart": [
+                {
+                    "ean": product.ean,
+                    "quantity": quantity,
+                }
+            ],
+        },
+    )
+    assert response.status_code == fastapi.status.HTTP_201_CREATED, response.text
+    storevisit_url = response.headers["Location"]
+    expected_storevisit_id = storevisit_url.split("/")[-1]
+    response = testclient.get(storevisit_url)
+    assert response.json() == {
+        "self": storevisit_url,
+        "id": expected_storevisit_id,
+        "store": store_url,
+        "cart": [
+            {
+                "product": f"{store_url}/products/{product.ean}",
+                "quantity": quantity,
+            }
+        ],
+    }
+
+
+@pytest.mark.asyncio
+async def test_post_store_visit_unknown_store(testclient, faker):
     store_url = f"http://testserver/api/v1/stores/{faker.uuid4()}"
     response = testclient.post(
         "http://testserver/api/v1/storevisits",
@@ -75,7 +108,7 @@ async def test_post_store_unknown_store(testclient, faker):
 
 
 @pytest.mark.asyncio
-async def test_post_store_unknown_product(testclient, store, faker):
+async def test_post_store_visit_unknown_product(testclient, store, faker):
     store_url = f"http://testserver/api/v1/stores/{store.id}"
     product_url = f"{store_url}/products/{faker.ean()}"
     response = testclient.post(
