@@ -9,4 +9,12 @@ from ._db import (
     storevisits,
     cartproducts,
 )
-from .utils import begin_connection, execute, create, select, read, delete
+from .utils import (
+    begin_connection,
+    execute,
+    create,
+    upsert,
+    select,
+    read,
+    delete,
+)

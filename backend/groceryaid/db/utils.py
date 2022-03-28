@@ -10,9 +10,10 @@ import operator
 import typing
 
 import sqlalchemy
+from sqlalchemy.dialects import postgresql
 import sqlalchemy.engine
-from sqlalchemy.sql.expression import ColumnElement
 import sqlalchemy.ext.asyncio as sqlaio
+from sqlalchemy.sql.expression import ColumnElement
 
 from . import _db
 
@@ -23,16 +24,33 @@ def _to_sequence(value):
     return [value]
 
 
+def _pk_sequence_to_where_expr(
+    table: sqlalchemy.Table, pk: typing.Sequence[typing.Any]
+):
+    return functools.reduce(
+        operator.and_, (c == p for (c, p) in zip(table.primary_key, pk))
+    )
+
+
+def _pk_to_where_expr(
+    table: sqlalchemy.Table,
+    pk: typing.Any | typing.Sequence[typing.Any] | ColumnElement,
+):
+    if isinstance(pk, ColumnElement):
+        return pk
+    return _pk_sequence_to_where_expr(table, _to_sequence(pk))
+
+
 def begin_connection(
     connection: typing.Optional[sqlaio.AsyncConnection] = None,
 ) -> typing.AsyncContextManager[sqlaio.AsyncConnection]:
     """Begin transaction, or continue an existing one
 
     Arguments:
-        connection: Database connection, or `None` to use a fresh connection
+        connection: Database connection, or ``None`` to use a fresh connection
 
     Returns:
-        `connection` wrapped in null context manager if it exists, otherwise a new
+        ``connection`` wrapped in null context manager if it exists, otherwise a new
         connection
     """
     if connection:
@@ -48,7 +66,7 @@ async def execute(
     """Execute a SQL expression in the default database
 
     Keyword Arguments:
-       connection: Database connection, or `None` to use a fresh connection
+       connection: Database connection, or ``None`` to use a fresh connection
     """
     async with begin_connection(connection) as conn:
         return await conn.execute(*args, **kwargs)
@@ -56,20 +74,46 @@ async def execute(
 
 async def create(
     table: sqlalchemy.Table,
-    objs: typing.Any,
+    objs: typing.Mapping | typing.Sequence[typing.Mapping],
     *,
     connection: typing.Optional[sqlaio.AsyncConnection] = None,
 ):
-    """Insert `objs` into `table` in the default database
+    """Insert ``objs`` into ``table`` in the default database
 
     Parameters:
         table: Database table
         objs: Object/objects to insert
 
     Keyword Arguments:
-        connection: Database connection, or `None` to use a fresh connection
+        connection: Database connection, or ``None`` to use a fresh connection
     """
     return await execute(table.insert(), objs, connection=connection)
+
+
+async def upsert(
+    table: sqlalchemy.Table,
+    objs: typing.Mapping | typing.Sequence[typing.Mapping],
+    *,
+    connection: typing.Optional[sqlaio.AsyncConnection] = None,
+):
+    """Upsert ``objs`` into ``table``
+
+    Parameters:
+        table: Database table
+        objs: Object/objects to insert
+
+    Keyword Arguments:
+        connection: Database connection, or ``None`` to use a fresh connection
+    """
+    obj = objs if isinstance(objs, typing.Mapping) else objs[0]
+    pk_names = {key.name for key in table.primary_key}
+    insert_stmt = postgresql.insert(table)
+    set_ = {key: insert_stmt.excluded[key] for key in obj.keys() if key not in pk_names}
+    set_["updated_at"] = insert_stmt.excluded.updated_at
+    do_update_stmt = insert_stmt.on_conflict_do_update(
+        index_elements=pk_names, set_=set_
+    )
+    await execute(do_update_stmt, objs, connection=connection)
 
 
 async def read(
@@ -87,7 +131,7 @@ async def read(
 
     Keyword Arguments:
        columns: The list of columns to select (defaults to whole table)
-       connection: Database connection, or `None` to use a fresh connection
+       connection: Database connection, or ``None`` to use a fresh connection
 
     Returns:
        The resulting row
@@ -96,15 +140,8 @@ async def read(
         select_expr = sqlalchemy.select(columns)
     else:
         select_expr = table.select()
-    if isinstance(pk, ColumnElement):
-        where_expr = pk
-    else:
-        pk_parts = _to_sequence(pk)
-        where_expr = functools.reduce(
-            operator.and_, (c == p for (c, p) in zip(table.primary_key, pk_parts))
-        )
     result = await execute(
-        select_expr.where(where_expr),
+        select_expr.where(_pk_to_where_expr(table, pk)),
         connection=connection,
     )
     return result.first()
@@ -131,7 +168,7 @@ async def select(
 
 async def delete(
     table: sqlalchemy.Table,
-    pk: typing.Any | typing.Sequence[typing.Any],
+    pk: typing.Any | typing.Sequence[typing.Any] | ColumnElement,
     *,
     connection: typing.Optional[sqlaio.AsyncConnection] = None,
 ):
@@ -145,8 +182,7 @@ async def delete(
        columns: The list of columns to select (defaults to whole table)
        connection: Database connection, or `None` to use a fresh connection
     """
-    pk_parts = _to_sequence(pk)
     await execute(
-        table.delete().where(*(c == p for (c, p) in zip(table.primary_key, pk_parts))),
+        table.delete().where(_pk_to_where_expr(table, pk)),
         connection=connection,
     )

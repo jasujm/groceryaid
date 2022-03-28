@@ -19,9 +19,9 @@ async def fetch_and_save_stores_and_products(chain: RetailChain):
             store_external_id
         ) as fetcher:
             store = fetcher.get_store()
-            await db.create(db.stores, store.dict(), connection=connection)
+            await db.upsert(db.stores, store.dict(), connection=connection)
             async for products in fetcher.get_products_in_batches():
-                await db.create(
+                await db.upsert(
                     db.products,
                     [product.dict() for product in products],
                     connection=connection,
