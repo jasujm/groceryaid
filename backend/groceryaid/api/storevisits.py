@@ -2,22 +2,22 @@
 
 import uuid
 
+import hrefs
 import fastapi
 import sqlalchemy
 
-from .models import StoreVisit, StoreVisitCreate, CartProductCreate
+from .models import StoreVisit, StoreVisitCreate
 
 from .. import db
-from ..retail import storevisits, Ean
+from ..retail import storevisits
 
 router = fastapi.APIRouter()
 
 
-def _get_cart_product_ean(cartproduct: CartProductCreate) -> Ean:
-    if ean := cartproduct.ean:
-        return ean
-    assert cartproduct.product is not None
-    return cartproduct.product.key.ean
+def _get_cart_product_ean(product: hrefs.Href | str) -> str:
+    if isinstance(product, str):
+        return product
+    return product.key.ean
 
 
 @router.get("/{id}", response_model=StoreVisit)
@@ -62,7 +62,8 @@ async def post_store_visit(
                 detail=f"Cannot create store visit with unknown store: {store_id!r}",
             )
         product_eans = set(
-            _get_cart_product_ean(cartproduct) for cartproduct in storevisit.cart
+            _get_cart_product_ean(cartproduct.product)
+            for cartproduct in storevisit.cart
         )
         known_product_eans = set(
             row[0]
@@ -83,7 +84,7 @@ async def post_store_visit(
             store_id=store.id,
             cart=[
                 {
-                    "ean": _get_cart_product_ean(cartproduct),
+                    "ean": _get_cart_product_ean(cartproduct.product),
                     **cartproduct.dict(exclude={"product", "ean"}),
                 }
                 for cartproduct in storevisit.cart

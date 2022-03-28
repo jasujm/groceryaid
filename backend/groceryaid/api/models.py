@@ -97,19 +97,10 @@ StoreVisit.update_forward_refs()
 class CartProductCreate(_CartProductBase):
     """Payload for creating a product in cart"""
 
-    ean: typing.Optional[Ean]
-    product: typing.Optional[hrefs.Href[Product]]
-
-    @pydantic.root_validator
-    def _ean_or_product_must_be_set(cls, values):
-        ean = values.get("ean")
-        product = values.get("product")
-        if sum(v is not None for v in (ean, product)) != 1:
-            raise ValueError(
-                "Exactly one of `ean` and `product` must be set. "
-                f"Got: {ean=!r}, {product=!r}"
-            )
-        return values
+    product: hrefs.Href[Product] | Ean = pydantic.Field(
+        description="Product is identified either as hyperlink or EAN number. "
+        "In the latter case the store is inferred from the context."
+    )
 
 
 class StoreVisitCreate(_StoreVisitBase):

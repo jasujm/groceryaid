@@ -3,6 +3,7 @@
 import decimal
 import enum
 import uuid
+import re
 import typing
 
 import pydantic
@@ -35,7 +36,24 @@ def _get_product_id(store_id, ean: str) -> uuid.UUID:
 
 ExternalId = typing.Annotated[str, pydantic.Field(max_length=36)]
 Name = typing.Annotated[str, pydantic.Field(max_length=255)]
-Ean = typing.Annotated[str, pydantic.Field(regex=r"\d{13}")]
+
+
+class Ean(str):
+    """EAN code"""
+
+    _ean_pattern = re.compile(r"^[0-9]{13}$")
+
+    @classmethod
+    def validate(cls, value: str):
+        if not cls._ean_pattern.fullmatch(value):
+            raise ValueError("{value!r} is not valid EAN number")
+        return cls(value)
+
+    @classmethod
+    def __modify_schema__(cls, field_schema):
+        field_schema["pattern"] = cls._ean_pattern.pattern
+
+
 Price = typing.Annotated[
     decimal.Decimal, pydantic.Field(max_digits=7, decimal_places=2)
 ]

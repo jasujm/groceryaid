@@ -72,7 +72,7 @@ async def test_post_store_visit_ean_lookup(testclient, store, product, faker):
             "store": store_url,
             "cart": [
                 {
-                    "ean": product.ean,
+                    "product": product.ean,
                     "quantity": quantity,
                 }
             ],
