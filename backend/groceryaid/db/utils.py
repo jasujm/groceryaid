@@ -116,6 +116,30 @@ async def upsert(
     await execute(do_update_stmt, objs, connection=connection)
 
 
+async def update(
+    table: sqlalchemy.Table,
+    obj: typing.Mapping,
+    *,
+    connection: typing.Optional[sqlaio.AsyncConnection] = None,
+):
+    """Update ``obj`` in ``table`` identified by primary key
+
+    Parameters:
+        table: Database table
+        objs: Object/objects to insert
+
+    Keyword Arguments:
+        connection: Database connection, or ``None`` to use a fresh connection
+    """
+    pk_names = {key.name for key in table.primary_key}
+    pk = [value for (key, value) in obj.items() if key in pk_names]
+    values = {key: value for (key, value) in obj.items() if key not in pk_names}
+    await execute(
+        table.update().where(_pk_sequence_to_where_expr(table, pk)).values(**values),
+        connection=connection,
+    )
+
+
 async def read(
     table: sqlalchemy.Table,
     pk: typing.Any | typing.Sequence[typing.Any] | ColumnElement,

@@ -107,3 +107,9 @@ class StoreVisitCreate(_StoreVisitBase):
     """Payload for creating a store visit"""
 
     cart: list[CartProductCreate] = []
+
+
+class StoreVisitUpdate(pydantic.BaseModel):
+    """Payload for updating a store visit"""
+
+    cart: list[CartProductCreate] = []

@@ -14,6 +14,7 @@ from .utils import (
     execute,
     create,
     upsert,
+    update,
     select,
     read,
     delete,

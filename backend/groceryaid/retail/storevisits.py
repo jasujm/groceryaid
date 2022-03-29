@@ -11,6 +11,17 @@ from .common import StoreVisit, _get_product_id
 from .. import db
 
 
+def _prepare_cart_for_db(storevisit: StoreVisit) -> list[dict]:
+    return [
+        {
+            "storevisit_id": storevisit.id,
+            "product_id": _get_product_id(storevisit.store_id, cartproduct.ean),
+            **cartproduct.dict(exclude={"ean"}),
+        }
+        for cartproduct in storevisit.cart
+    ]
+
+
 async def read_store_visit(
     id: uuid.UUID,
     *,
@@ -24,7 +35,7 @@ async def read_store_visit(
         id: The store visit id
 
     Keyword Arguments:
-       connection: Database connection, or `None` to use a fresh connection
+       connection: Database connection, or ``None`` to use a fresh connection
     """
     async with db.begin_connection(connection) as conn:
         storevisit = await db.read(
@@ -61,7 +72,7 @@ async def create_store_visit(
         storevisit: The store visit
 
     Keyword Arguments:
-       connection: Database connection, or `None` to use a fresh connection
+       connection: Database connection, or ``None`` to use a fresh connection
     """
     async with db.begin_connection(connection) as conn:
         await db.create(
@@ -70,15 +81,42 @@ async def create_store_visit(
         if storevisit.cart:
             await db.create(
                 db.cartproducts,
-                [
-                    {
-                        "storevisit_id": storevisit.id,
-                        "product_id": _get_product_id(
-                            storevisit.store_id, cartproduct.ean
-                        ),
-                        **cartproduct.dict(exclude={"ean"}),
-                    }
-                    for cartproduct in storevisit.cart
-                ],
+                _prepare_cart_for_db(storevisit),
                 connection=conn,
             )
+
+
+async def update_store_visit(
+    storevisit: StoreVisit,
+    *,
+    connection: typing.Optional[sqlaio.AsyncConnection] = None,
+):
+    """Update an existing store visit with dependencies
+
+    Parameters:
+        storevisit: The store visit
+
+    Keyword Arguments:
+       connection: Database connection, or ``None`` to use a fresh connection
+    """
+    async with db.begin_connection(connection) as conn:
+        await db.update(
+            db.storevisits,
+            storevisit.dict(exclude={"store_id", "cart"}),
+            connection=conn,
+        )
+        if storevisit.cart:
+            await db.upsert(
+                db.cartproducts,
+                _prepare_cart_for_db(storevisit),
+                connection=conn,
+            )
+        await db.delete(
+            db.cartproducts,
+            (db.cartproducts.c.storevisit_id == storevisit.id)
+            & db.cartproducts.c.product_id.not_in(  # type: ignore
+                _get_product_id(storevisit.store_id, cartproduct.ean)
+                for cartproduct in storevisit.cart
+            ),
+            connection=conn,
+        )

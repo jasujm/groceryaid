@@ -1,7 +1,6 @@
 """Test store visit API"""
 
 import fastapi
-import pytest
 
 
 def test_get_store_visit(testclient, storevisit):
@@ -28,8 +27,7 @@ def test_get_store_visit_not_found(testclient, faker):
     assert response.status_code == fastapi.status.HTTP_404_NOT_FOUND
 
 
-@pytest.mark.asyncio
-async def test_post_store_visit(testclient, store, product, faker):
+def test_post_store_visit(testclient, store, product, faker):
     store_url = f"http://testserver/api/v1/stores/{store.id}"
     product_url = f"{store_url}/products/{product.ean}"
     quantity = faker.pyint(min_value=1)
@@ -62,8 +60,7 @@ async def test_post_store_visit(testclient, store, product, faker):
     }
 
 
-@pytest.mark.asyncio
-async def test_post_store_visit_ean_lookup(testclient, store, product, faker):
+def test_post_store_visit_ean_lookup(testclient, store, product, faker):
     store_url = f"http://testserver/api/v1/stores/{store.id}"
     quantity = faker.pyint(min_value=1)
     response = testclient.post(
@@ -95,8 +92,7 @@ async def test_post_store_visit_ean_lookup(testclient, store, product, faker):
     }
 
 
-@pytest.mark.asyncio
-async def test_post_store_visit_unknown_store(testclient, faker):
+def test_post_store_visit_unknown_store(testclient, faker):
     store_url = f"http://testserver/api/v1/stores/{faker.uuid4()}"
     response = testclient.post(
         "http://testserver/api/v1/storevisits",
@@ -107,8 +103,7 @@ async def test_post_store_visit_unknown_store(testclient, faker):
     assert response.status_code == fastapi.status.HTTP_400_BAD_REQUEST
 
 
-@pytest.mark.asyncio
-async def test_post_store_visit_unknown_product(testclient, store, faker):
+def test_post_store_visit_unknown_product(testclient, store, faker):
     store_url = f"http://testserver/api/v1/stores/{store.id}"
     product_url = f"{store_url}/products/{faker.ean()}"
     response = testclient.post(
@@ -124,3 +119,41 @@ async def test_post_store_visit_unknown_product(testclient, store, faker):
         },
     )
     assert response.status_code == fastapi.status.HTTP_400_BAD_REQUEST
+
+
+def test_put_store_visit(testclient, storevisit, store, product, faker):
+    storevisit_url = f"http://testserver/api/v1/storevisits/{storevisit.id}"
+    store_url = f"http://testserver/api/v1/stores/{store.id}"
+    product_url = f"{store_url}/products/{product.ean}"
+    quantity = faker.pyint(min_value=1)
+    response = testclient.put(
+        storevisit_url,
+        json={
+            "cart": [
+                {
+                    "product": product_url,
+                    "quantity": quantity,
+                }
+            ],
+        },
+    )
+    assert response.status_code == fastapi.status.HTTP_204_NO_CONTENT, response.text
+    response = testclient.get(storevisit_url)
+    assert response.json() == {
+        "self": storevisit_url,
+        "id": str(storevisit.id),
+        "store": store_url,
+        "cart": [
+            {
+                "product": f"{store_url}/products/{product.ean}",
+                "quantity": quantity,
+            }
+        ],
+    }
+
+
+def test_put_store_visit_not_found(testclient, faker):
+    response = testclient.put(
+        f"http://testserver/api/v1/storevisits/{faker.uuid4()}", json={"cart": []}
+    )
+    assert response.status_code == fastapi.status.HTTP_404_NOT_FOUND
