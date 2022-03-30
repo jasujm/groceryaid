@@ -50,6 +50,10 @@ class Ean(str):
         return cls(value)
 
     @classmethod
+    def __get_validators__(cls):
+        yield cls.validate
+
+    @classmethod
     def __modify_schema__(cls, field_schema):
         field_schema["pattern"] = cls._ean_pattern.pattern
 
