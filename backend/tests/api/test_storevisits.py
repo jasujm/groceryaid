@@ -157,3 +157,67 @@ def test_put_store_visit_not_found(testclient, faker):
         f"http://testserver/api/v1/storevisits/{faker.uuid4()}", json={"cart": []}
     )
     assert response.status_code == fastapi.status.HTTP_404_NOT_FOUND
+
+
+def test_patch_store_visit(testclient, storevisit, store, product, faker):
+    storevisit_url = f"http://testserver/api/v1/storevisits/{storevisit.id}"
+    store_url = f"http://testserver/api/v1/stores/{store.id}"
+    product_url = f"{store_url}/products/{product.ean}"
+    quantity = faker.pyint(min_value=1)
+    response = testclient.patch(
+        storevisit_url,
+        headers={"Content-Type": "application/json-patch+json"},
+        json=[
+            {"op": "replace", "path": "/cart", "value": []},
+            {
+                "op": "add",
+                "path": "/cart/0",
+                "value": {"product": product_url, "quantity": quantity},
+            },
+        ],
+    )
+    assert response.status_code == fastapi.status.HTTP_204_NO_CONTENT, response.text
+    response = testclient.get(storevisit_url)
+    assert response.json() == {
+        "self": storevisit_url,
+        "id": str(storevisit.id),
+        "store": store_url,
+        "cart": [
+            {
+                "product": f"{store_url}/products/{product.ean}",
+                "quantity": quantity,
+            }
+        ],
+    }
+
+
+def test_patch_store_visit_invalid_content_type(testclient, storevisit):
+    response = testclient.patch(
+        f"http://testserver/api/v1/storevisits/{storevisit.id}", json=[]
+    )
+    assert response.status_code == fastapi.status.HTTP_415_UNSUPPORTED_MEDIA_TYPE
+
+
+def test_patch_store_visit_not_found(testclient, faker):
+    response = testclient.patch(
+        f"http://testserver/api/v1/storevisits/{faker.uuid4()}",
+        headers={"Content-Type": "application/json-patch+json"},
+        json=[],
+    )
+    assert response.status_code == fastapi.status.HTTP_404_NOT_FOUND
+
+
+def test_patch_store_visit_invalid_patch(testclient, storevisit):
+    storevisit_url = f"http://testserver/api/v1/storevisits/{storevisit.id}"
+    response = testclient.patch(
+        storevisit_url,
+        headers={"Content-Type": "application/json-patch+json"},
+        json=[
+            {
+                "op": "add",
+                "path": "/cart",
+                "value": "this is not a cart",
+            },
+        ],
+    )
+    assert response.status_code == fastapi.status.HTTP_409_CONFLICT

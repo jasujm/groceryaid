@@ -1,9 +1,12 @@
 """Stores API"""
 
+import typing
 import uuid
 
 import hrefs
 import fastapi
+import jsonpatch
+import pydantic
 import sqlalchemy
 import sqlalchemy.ext.asyncio as sqlaio
 
@@ -14,11 +17,41 @@ from ..retail import storevisits
 
 router = fastapi.APIRouter()
 
+_JSON_PATCH_CONTENT_TYPE = "application/json-patch+json"
+
 
 def _get_cart_product_ean(product: hrefs.Href | str) -> str:
     if isinstance(product, str):
         return product
     return product.key.ean
+
+
+async def _get_json_patch(
+    request: fastapi.Request,
+    body=fastapi.Body(..., media_type=_JSON_PATCH_CONTENT_TYPE),
+) -> jsonpatch.JsonPatch:
+    if (
+        content_type := request.headers.get("content-type")
+    ) != _JSON_PATCH_CONTENT_TYPE:
+        raise fastapi.HTTPException(
+            status_code=fastapi.status.HTTP_415_UNSUPPORTED_MEDIA_TYPE,
+            detail=f"Expected content type {_JSON_PATCH_CONTENT_TYPE!r}, got: {content_type!r}",
+        )
+    try:
+        return jsonpatch.JsonPatch(body)
+    except jsonpatch.InvalidJsonPatch as ex:
+        # To simulate the pydantic error style FastAPI uses... there could
+        # potentially be fancier way to achieve this
+        raise fastapi.HTTPException(
+            status_code=fastapi.status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=[
+                {
+                    "loc": "body",
+                    "msg": str(ex),
+                    "type": "value_error.invalidjsonpatch",
+                }
+            ],
+        ) from ex
 
 
 async def _verify_products_exist(
@@ -42,11 +75,11 @@ async def _verify_products_exist(
     if missing_eans := product_eans - known_product_eans:
         raise fastapi.HTTPException(
             status_code=fastapi.status.HTTP_400_BAD_REQUEST,
-            detail=f"Cannot create store visit with unknown products: {missing_eans!r}",
+            detail=f"Cannot create/update store visit with unknown products: {missing_eans!r}",
         )
 
 
-def _prepare_storevisit(
+def _prepare_store_visit_for_db(
     storevisit: StoreVisitCreate | StoreVisitUpdate, **kwargs
 ) -> storevisits.StoreVisit:
     return storevisits.StoreVisit(
@@ -61,15 +94,13 @@ def _prepare_storevisit(
     )
 
 
-@router.get("/{id}", response_model=StoreVisit)
-async def get_store_visit(id: uuid.UUID):
-    """
-    Retrieve information about store visit identified by ``id``
-    """
-    if storevisit := await storevisits.read_store_visit(id):
+async def _get_store_visit(
+    id: uuid.UUID, *, connection: typing.Optional[sqlaio.AsyncConnection] = None
+):
+    if storevisit := await storevisits.read_store_visit(id, connection=connection):
         store_id = storevisit.store_id
         return {
-            "id": id,
+            "id": storevisit.id,
             "store": store_id,
             "cart": [
                 {
@@ -83,6 +114,14 @@ async def get_store_visit(id: uuid.UUID):
         status_code=fastapi.status.HTTP_404_NOT_FOUND,
         detail=f"Store visit {id=!r} not found",
     )
+
+
+@router.get("/{id}", response_model=StoreVisit)
+async def get_store_visit(id: uuid.UUID):
+    """
+    Retrieve information about store visit identified by ``id``
+    """
+    return await _get_store_visit(id)
 
 
 @router.post("", status_code=fastapi.status.HTTP_201_CREATED)
@@ -103,7 +142,7 @@ async def post_store_visit(
                 detail=f"Cannot create store visit with unknown store: {store_id!r}",
             )
         await _verify_products_exist(connection, storevisit, store_id)
-        new_storevisit = _prepare_storevisit(storevisit, store_id=store.id)
+        new_storevisit = _prepare_store_visit_for_db(storevisit, store_id=store.id)
         await storevisits.create_store_visit(new_storevisit, connection=connection)
         response.headers["Location"] = request.url_for(
             "get_store_visit", id=new_storevisit.id
@@ -129,5 +168,33 @@ async def put_store_visit(id: uuid.UUID, storevisit: StoreVisitUpdate):
             )
         store_id = storevisit_in_db.store_id
         await _verify_products_exist(connection, storevisit, store_id)
-        new_storevisit = _prepare_storevisit(storevisit, id=id, store_id=store_id)
+        new_storevisit = _prepare_store_visit_for_db(
+            storevisit, id=id, store_id=store_id
+        )
         await storevisits.update_store_visit(new_storevisit, connection=connection)
+
+
+@router.patch("/{id}", status_code=fastapi.status.HTTP_204_NO_CONTENT)
+async def patch_store_visit(
+    id: uuid.UUID, patch: jsonpatch.JsonPatch = fastapi.Depends(_get_json_patch)
+):
+    """
+    Partially update a store visit
+    """
+    async with db.get_connection() as connection:
+        old_storevisit_data = await _get_store_visit(id, connection=connection)
+        old_storevisit = StoreVisit(**old_storevisit_data)
+        store_id = old_storevisit.store.key
+        try:
+            new_storevisit_data = patch.apply(old_storevisit.dict())
+            new_storevisit = StoreVisitUpdate(**new_storevisit_data)
+        except (pydantic.ValidationError, jsonpatch.JsonPatchException) as ex:
+            raise fastapi.HTTPException(
+                status_code=fastapi.status.HTTP_409_CONFLICT,
+                detail=f"Failed to update store visit: {ex}",
+            ) from ex
+        await _verify_products_exist(connection, new_storevisit, store_id)
+        await storevisits.update_store_visit(
+            _prepare_store_visit_for_db(new_storevisit, id=id, store_id=store_id),
+            connection=connection,
+        )
