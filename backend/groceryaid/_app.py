@@ -5,7 +5,10 @@ from hrefs.starlette import HrefMiddleware
 
 from . import api
 
-app = fastapi.FastAPI()
+app = fastapi.FastAPI(
+    title="Grocery Aid",
+    description="App aiding grocery shopping in Finland",
+)
 
 app.add_middleware(HrefMiddleware)
 

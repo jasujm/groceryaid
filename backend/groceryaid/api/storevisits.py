@@ -19,6 +19,10 @@ router = fastapi.APIRouter()
 
 _JSON_PATCH_CONTENT_TYPE = "application/json-patch+json"
 
+_RESPONSE_404 = {
+    "description": "Store visit not found",
+}
+
 
 def _get_cart_product_ean(product: hrefs.Href | str) -> str:
     if isinstance(product, str):
@@ -116,7 +120,13 @@ async def _get_store_visit(
     )
 
 
-@router.get("/{id}", response_model=StoreVisit)
+@router.get(
+    "/{id}",
+    response_model=StoreVisit,
+    responses={
+        fastapi.status.HTTP_404_NOT_FOUND: _RESPONSE_404,
+    },
+)
 async def get_store_visit(id: uuid.UUID):
     """
     Retrieve information about store visit identified by ``id``
@@ -149,7 +159,13 @@ async def post_store_visit(
         )
 
 
-@router.put("/{id}", status_code=fastapi.status.HTTP_204_NO_CONTENT)
+@router.put(
+    "/{id}",
+    status_code=fastapi.status.HTTP_204_NO_CONTENT,
+    responses={
+        fastapi.status.HTTP_404_NOT_FOUND: _RESPONSE_404,
+    },
+)
 async def put_store_visit(id: uuid.UUID, storevisit: StoreVisitUpdate):
     """
     Update a store visit
@@ -174,12 +190,27 @@ async def put_store_visit(id: uuid.UUID, storevisit: StoreVisitUpdate):
         await storevisits.update_store_visit(new_storevisit, connection=connection)
 
 
-@router.patch("/{id}", status_code=fastapi.status.HTTP_204_NO_CONTENT)
+@router.patch(
+    "/{id}",
+    status_code=fastapi.status.HTTP_204_NO_CONTENT,
+    responses={
+        fastapi.status.HTTP_404_NOT_FOUND: _RESPONSE_404,
+        fastapi.status.HTTP_409_CONFLICT: {
+            "description": "Cannot apply the JSON patch in the body"
+        },
+    },
+)
 async def patch_store_visit(
     id: uuid.UUID, patch: jsonpatch.JsonPatch = fastapi.Depends(_get_json_patch)
 ):
     """
     Partially update a store visit
+
+    The update happens as if by applying the JSON patch in the body to the
+    representation returned by the corresponding GET request. If the JSON patch
+    doesn't apply, or the resulting JSON document doesn't represent a valid
+    store visit, the operation fails. Fields that cannot be updated with a PUT
+    request cannot be updated with a PATCH request either, and are ignored.
     """
     async with db.get_connection() as connection:
         old_storevisit_data = await _get_store_visit(id, connection=connection)

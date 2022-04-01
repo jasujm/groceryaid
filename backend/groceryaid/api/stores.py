@@ -11,7 +11,15 @@ from .models import Store, Product
 router = fastapi.APIRouter()
 
 
-@router.get("/{id}", response_model=Store)
+@router.get(
+    "/{id}",
+    response_model=Store,
+    responses={
+        fastapi.status.HTTP_404_NOT_FOUND: {
+            "description": "Store not found",
+        },
+    },
+)
 async def get_store(id: uuid.UUID):
     """
     Retrieve basic information about store identified by ``id``
@@ -26,7 +34,15 @@ async def get_store(id: uuid.UUID):
     )
 
 
-@router.get("/{store_id}/products/{ean}", response_model=Product)
+@router.get(
+    "/{store_id}/products/{ean}",
+    response_model=Product,
+    responses={
+        fastapi.status.HTTP_404_NOT_FOUND: {
+            "description": "Product not found",
+        },
+    },
+)
 async def get_product(store_id: uuid.UUID, ean: str):
     """
     Retrieve information about a product identified by store and EAN code
