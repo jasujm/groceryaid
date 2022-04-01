@@ -98,22 +98,26 @@ def _prepare_store_visit_for_db(
     )
 
 
+def _prepare_store_visit_for_api(storevisit: storevisits.StoreVisit) -> dict:
+    store_id = storevisit.store_id
+    return {
+        "id": storevisit.id,
+        "store": store_id,
+        "cart": [
+            {
+                "product": (store_id, product.ean),
+                **product.dict(),
+            }
+            for product in storevisit.cart
+        ],
+    }
+
+
 async def _get_store_visit(
     id: uuid.UUID, *, connection: typing.Optional[sqlaio.AsyncConnection] = None
 ):
     if storevisit := await storevisits.read_store_visit(id, connection=connection):
-        store_id = storevisit.store_id
-        return {
-            "id": storevisit.id,
-            "store": store_id,
-            "cart": [
-                {
-                    "product": (store_id, product.ean),
-                    **product.dict(),
-                }
-                for product in storevisit.cart
-            ],
-        }
+        return _prepare_store_visit_for_api(storevisit)
     raise fastapi.HTTPException(
         status_code=fastapi.status.HTTP_404_NOT_FOUND,
         detail=f"Store visit {id=!r} not found",
@@ -134,7 +138,12 @@ async def get_store_visit(id: uuid.UUID):
     return await _get_store_visit(id)
 
 
-@router.post("", status_code=fastapi.status.HTTP_201_CREATED)
+@router.post(
+    "",
+    status_code=fastapi.status.HTTP_201_CREATED,
+    response_model=StoreVisit,
+    response_description="The created store visit",
+)
 async def post_store_visit(
     storevisit: StoreVisitCreate, response: fastapi.Response, request: fastapi.Request
 ):
@@ -157,11 +166,13 @@ async def post_store_visit(
         response.headers["Location"] = request.url_for(
             "get_store_visit", id=new_storevisit.id
         )
+        return _prepare_store_visit_for_api(new_storevisit)
 
 
 @router.put(
     "/{id}",
-    status_code=fastapi.status.HTTP_204_NO_CONTENT,
+    response_model=StoreVisit,
+    response_description="The updated store visit",
     responses={
         fastapi.status.HTTP_404_NOT_FOUND: _RESPONSE_404,
     },
@@ -188,11 +199,13 @@ async def put_store_visit(id: uuid.UUID, storevisit: StoreVisitUpdate):
             storevisit, id=id, store_id=store_id
         )
         await storevisits.update_store_visit(new_storevisit, connection=connection)
+        return _prepare_store_visit_for_api(new_storevisit)
 
 
 @router.patch(
     "/{id}",
-    status_code=fastapi.status.HTTP_204_NO_CONTENT,
+    response_model=StoreVisit,
+    response_description="The updated store visit",
     responses={
         fastapi.status.HTTP_404_NOT_FOUND: _RESPONSE_404,
         fastapi.status.HTTP_409_CONFLICT: {
@@ -225,7 +238,8 @@ async def patch_store_visit(
                 detail=f"Failed to update store visit: {ex}",
             ) from ex
         await _verify_products_exist(connection, new_storevisit, store_id)
-        await storevisits.update_store_visit(
-            _prepare_store_visit_for_db(new_storevisit, id=id, store_id=store_id),
-            connection=connection,
+        new_storevisit_data = _prepare_store_visit_for_db(
+            new_storevisit, id=id, store_id=store_id
         )
+        await storevisits.update_store_visit(new_storevisit_data, connection=connection)
+        return _prepare_store_visit_for_api(new_storevisit_data)

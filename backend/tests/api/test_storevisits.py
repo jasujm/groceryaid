@@ -45,11 +45,10 @@ def test_post_store_visit(testclient, store, product, faker):
     )
     assert response.status_code == fastapi.status.HTTP_201_CREATED, response.text
     storevisit_url = response.headers["Location"]
-    expected_storevisit_id = storevisit_url.split("/")[-1]
-    response = testclient.get(storevisit_url)
-    assert response.json() == {
+    storevisit_in_response = response.json()
+    assert storevisit_in_response == {
         "self": storevisit_url,
-        "id": expected_storevisit_id,
+        "id": storevisit_in_response["id"],
         "store": store_url,
         "cart": [
             {
@@ -137,8 +136,7 @@ def test_put_store_visit(testclient, storevisit, store, product, faker):
             ],
         },
     )
-    assert response.status_code == fastapi.status.HTTP_204_NO_CONTENT, response.text
-    response = testclient.get(storevisit_url)
+    assert response.status_code == fastapi.status.HTTP_200_OK, response.text
     assert response.json() == {
         "self": storevisit_url,
         "id": str(storevisit.id),
@@ -176,8 +174,7 @@ def test_patch_store_visit(testclient, storevisit, store, product, faker):
             },
         ],
     )
-    assert response.status_code == fastapi.status.HTTP_204_NO_CONTENT, response.text
-    response = testclient.get(storevisit_url)
+    assert response.status_code == fastapi.status.HTTP_200_OK, response.text
     assert response.json() == {
         "self": storevisit_url,
         "id": str(storevisit.id),
