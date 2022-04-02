@@ -1,5 +1,5 @@
 [tool.poetry]
-name = "grocery-aid"
+name = "grocery-aid-backend"
 version = "0.1.0"
 description = "App aiding grocery shopping in Finland"
 authors = ["Jaakko Moisio <jaakko@moisio.fi>"]
