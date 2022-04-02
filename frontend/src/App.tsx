@@ -1,15 +1,18 @@
 import React from "react";
 import Container from "react-bootstrap/Container";
-import Row from "react-bootstrap/Row";
+
+import StorePicker from "./components/StorePicker";
 
 import "./App.scss";
 
 function App() {
+  const [store, setStore] = React.useState("");
+
   return (
     <Container>
-      <Row>
-        <h1>Grocery Aid</h1>
-      </Row>
+      <h1>Grocery Aid</h1>
+      <StorePicker onChange={setStore} value={store} />
+      <p>{store}</p>
     </Container>
   );
 }

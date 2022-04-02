@@ -12,6 +12,19 @@ router = fastapi.APIRouter()
 
 
 @router.get(
+    "",
+    response_model=list[Store],
+)
+async def get_stores():
+    """
+    Retrieve basic information about all stores
+    """
+    return await db.select(
+        db.stores, columns=[db.stores.c.id, db.stores.c.chain, db.stores.c.name]
+    )
+
+
+@router.get(
     "/{id}",
     response_model=Store,
     responses={

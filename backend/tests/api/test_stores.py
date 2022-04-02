@@ -3,6 +3,19 @@
 import fastapi
 
 
+def test_get_stores(testclient, store):
+    response = testclient.get("http://testserver/api/v1/stores")
+    assert response.status_code == fastapi.status.HTTP_200_OK
+    assert response.json() == [
+        {
+            "self": f"http://testserver/api/v1/stores/{store.id}",
+            "id": str(store.id),
+            "chain": store.chain.value,
+            "name": store.name,
+        }
+    ]
+
+
 def test_get_store(testclient, store):
     store_url = f"http://testserver/api/v1/stores/{store.id}"
     response = testclient.get(store_url)

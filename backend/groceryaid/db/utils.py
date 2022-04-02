@@ -41,6 +41,15 @@ def _pk_to_where_expr(
     return _pk_sequence_to_where_expr(table, _to_sequence(pk))
 
 
+def _columns_to_select_expr(
+    table: sqlalchemy.Table,
+    columns: typing.Optional[typing.Sequence[sqlalchemy.Column]],
+):
+    if columns:
+        return sqlalchemy.select(columns)
+    return table.select()
+
+
 def begin_connection(
     connection: typing.Optional[sqlaio.AsyncConnection] = None,
 ) -> typing.AsyncContextManager[sqlaio.AsyncConnection]:
@@ -160,12 +169,8 @@ async def read(
     Returns:
        The resulting row
     """
-    if columns:
-        select_expr = sqlalchemy.select(columns)
-    else:
-        select_expr = table.select()
     result = await execute(
-        select_expr.where(_pk_to_where_expr(table, pk)),
+        _columns_to_select_expr(table, columns).where(_pk_to_where_expr(table, pk)),
         connection=connection,
     )
     return result.first()
@@ -174,6 +179,7 @@ async def read(
 async def select(
     table: sqlalchemy.Table,
     *,
+    columns: typing.Optional[typing.Sequence[sqlalchemy.Column]] = None,
     connection: typing.Optional[sqlaio.AsyncConnection] = None,
 ) -> sqlalchemy.engine.CursorResult:  # type: ignore
     """Select rows from ``table``
@@ -182,12 +188,16 @@ async def select(
        table: The database table
 
     Keyword Arguments:
+       columns: The list of columns to select (defaults to whole table)
        connection: Database connection, or `None` to use a fresh connection
 
     Returns:
        The resulting rows
     """
-    return await execute(table.select(), connection=connection)
+    result = await execute(
+        _columns_to_select_expr(table, columns), connection=connection
+    )
+    return result.fetchall()
 
 
 async def delete(
