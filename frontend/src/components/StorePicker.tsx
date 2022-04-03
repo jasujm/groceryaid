@@ -10,6 +10,9 @@ export interface Props {
 
 export default function StorePicker({ value, onChange }: Props) {
   const [options, setOptions] = React.useState<Store[]>([]);
+  const store = options.find(
+    (option) => option.id === value || option.self === value
+  );
 
   React.useEffect(() => {
     getStores().then(setOptions);
@@ -18,8 +21,8 @@ export default function StorePicker({ value, onChange }: Props) {
   return (
     <Form.Select
       className="store-picker"
-      value={value}
-      disabled={Boolean(value)}
+      value={store?.self}
+      disabled={Boolean(store)}
       onChange={(event) => onChange?.(event.target.value)}
     >
       <option>-- Select store --</option>
