@@ -52,9 +52,12 @@
     ]
   },
   "devDependencies": {
+    "@faker-js/faker": "^6.1.1",
     "@testing-library/jest-dom": "^5.16.3",
     "@testing-library/react": "^13.0.0",
     "@testing-library/user-event": "^14.0.4",
+    "fishery": "^2.2.2",
+    "nock": "^13.2.4",
     "prettier": "^2.6.2"
   }
 }

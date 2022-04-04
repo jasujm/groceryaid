@@ -1,20 +1,10 @@
 import axios from "axios";
-
-export interface Store {
-  self: string;
-  id: string;
-  name: string;
-}
-
-export interface StoreVisit {
-  self: string;
-  id: string;
-  store: string;
-}
+import { Store, StoreVisit } from "./types";
 
 const HTTP_URL_RE = /^(http:|https:)/;
 
-const apiOrigin = process.env.REACT_APP_GROCERYAID_API_ORIGIN ?? "";
+const apiOrigin =
+  process.env.REACT_APP_GROCERYAID_API_ORIGIN ?? "http://localhost";
 const client = axios.create({
   baseURL: `${apiOrigin}/api/v1`,
   timeout: 1000,

@@ -4,21 +4,19 @@ import userEvent from "@testing-library/user-event";
 
 import StorePicker from "./StorePicker";
 import * as api from "../api";
+import { storeFactory } from "../test/factories";
 
 jest.mock("../api");
 
-const store = {
-  id: "16c5b78c-190f-4172-a424-b566396324e8",
-  self: "/stores/16c5b78c-190f-4172-a424-b566396324e8",
-  name: "The Shop",
-};
+const stores = storeFactory.buildList(3);
+const store = stores[0];
 
 describe("StorePicker", () => {
   let getStores = api.getStores as jest.MockedFn<typeof api.getStores>;
   let onChange: jest.Mock;
 
   beforeEach(() => {
-    getStores.mockResolvedValue([store]);
+    getStores.mockResolvedValue(stores);
     onChange = jest.fn();
   });
 
