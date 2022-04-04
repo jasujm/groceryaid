@@ -7,9 +7,13 @@ import { useSelector } from "../hooks";
 export default function HomeView() {
   const storeVisit = useSelector((state) => state.storeVisit);
 
-  if (storeVisit) {
-    return <Navigate to={`/storevisits/${storeVisit.id}`} replace={true} />;
-  } else {
-    return <Alert variant="info">Select store to continue</Alert>;
-  }
+  return (
+    <div className="home-view">
+      {storeVisit ? (
+        <Navigate to={`/storevisits/${storeVisit.id}`} replace={true} />
+      ) : (
+        <Alert variant="info">Select store to continue</Alert>
+      )}
+    </div>
+  );
 }

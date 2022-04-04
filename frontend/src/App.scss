@@ -1,5 +1,10 @@
 @import "~bootstrap/scss/bootstrap.scss";
 
-#app > .store-picker {
+#app .store-picker {
   margin-bottom: $spacer;
+}
+
+#app > h1 > a {
+  color: inherit;
+  text-decoration: inherit;
 }

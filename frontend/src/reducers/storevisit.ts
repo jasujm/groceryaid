@@ -23,7 +23,9 @@ export const loadStoreVisit = createAsyncThunk(
 export const storeVisitSlice = createSlice({
   name: "storeVisit",
   initialState: null as StoreVisit | null,
-  reducers: {},
+  reducers: {
+    clear: () => null,
+  },
   extraReducers: (builder) => {
     builder.addCase(createStoreVisit.fulfilled, (state, action) => {
       return action.payload;
@@ -35,3 +37,5 @@ export const storeVisitSlice = createSlice({
 });
 
 export default storeVisitSlice.reducer;
+
+export const { clear } = storeVisitSlice.actions;

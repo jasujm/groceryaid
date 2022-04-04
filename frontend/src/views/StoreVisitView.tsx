@@ -15,5 +15,9 @@ export default function StoreVisitView() {
     }
   }, [storeVisit, id, dispatch]);
 
-  return <pre>{JSON.stringify(storeVisit, null, 2)}</pre>;
+  return (
+    <div className="store-visit-view">
+      <pre> {JSON.stringify(storeVisit, null, 2)}</pre>
+    </div>
+  );
 }
