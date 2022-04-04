@@ -3,7 +3,7 @@ import { faker } from "@faker-js/faker";
 
 import { Store, StoreVisit } from "../api";
 
-function storeUrl(storeId: str) {
+function storeUrl(storeId: string) {
   return `http://localhost/api/v1/stores/${storeId}`;
 }
 

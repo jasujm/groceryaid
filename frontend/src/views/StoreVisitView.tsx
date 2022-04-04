@@ -1,11 +1,19 @@
 import React from "react";
+import { useParams } from "react-router-dom";
 
-import { StoreVisit } from "../api";
+import { useSelector, useDispatch } from "../hooks";
+import { loadStoreVisit } from "../reducers/storevisit";
 
-export interface Props {
-  storeVisit?: StoreVisit;
-}
+export default function StoreVisitView() {
+  const storeVisit = useSelector((state) => state.storeVisit);
+  const { id } = useParams();
+  const dispatch = useDispatch();
 
-export default function StoreVisitView({ storeVisit }: Props) {
+  React.useEffect(() => {
+    if (id !== storeVisit?.id) {
+      dispatch(loadStoreVisit(id!));
+    }
+  }, [storeVisit, id, dispatch]);
+
   return <pre>{JSON.stringify(storeVisit, null, 2)}</pre>;
 }
