@@ -79,7 +79,7 @@ async def _verify_products_exist(
     if missing_eans := product_eans - known_product_eans:
         raise fastapi.HTTPException(
             status_code=fastapi.status.HTTP_400_BAD_REQUEST,
-            detail=f"Cannot create/update store visit with unknown products: {missing_eans!r}",
+            detail=f"Unknown products: {', '.join(missing_eans)}",
         )
 
 

@@ -2,7 +2,12 @@ import nock from "nock";
 
 import { storeFactory, storeVisitFactory } from "../test/factories";
 
-import { getStores, createStoreVisit, getStoreVisit } from "./client";
+import {
+  getStores,
+  createStoreVisit,
+  getStoreVisit,
+  updateStoreVisit,
+} from "./client";
 
 const stores = storeFactory.buildList(3);
 const storeVisit = storeVisitFactory.build();
@@ -46,6 +51,16 @@ describe("api", () => {
 
     it("returns store visit by url", async () => {
       expect(await getStoreVisit(storeVisit.self)).toEqual(storeVisit);
+    });
+  });
+
+  describe("patchStoreVisit", () => {
+    it("patches store visit", async () => {
+      const jsonPatch = { op: "fake" };
+      scope
+        .patch(`/api/v1/storevisits/${storeVisit.id}`, jsonPatch)
+        .reply(200, storeVisit);
+      expect(await updateStoreVisit(storeVisit, jsonPatch)).toEqual(storeVisit);
     });
   });
 });

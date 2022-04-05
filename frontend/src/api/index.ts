@@ -1,2 +1,7 @@
-export type { Store, StoreVisit } from "./types";
-export { getStores, createStoreVisit, getStoreVisit } from "./client";
+export type { Store, CartProduct, StoreVisit } from "./types";
+export {
+  getStores,
+  createStoreVisit,
+  getStoreVisit,
+  updateStoreVisit,
+} from "./client";

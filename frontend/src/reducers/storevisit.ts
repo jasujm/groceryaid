@@ -3,8 +3,14 @@ import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
 import {
   createStoreVisit as apiCreateStoreVisit,
   getStoreVisit as apiGetStoreVisit,
+  updateStoreVisit as apiUpdateStoreVisit,
   StoreVisit,
 } from "../api";
+
+export interface StoreVisitUpdate {
+  storeVisit: StoreVisit;
+  patch: unknown;
+}
 
 export const createStoreVisit = createAsyncThunk(
   "storeVisit/createStoreVisit",
@@ -20,6 +26,13 @@ export const loadStoreVisit = createAsyncThunk(
   }
 );
 
+export const updateStoreVisit = createAsyncThunk(
+  "storeVisit/updateStoreVisit",
+  async ({ storeVisit, patch }: StoreVisitUpdate) => {
+    return await apiUpdateStoreVisit(storeVisit, patch);
+  }
+);
+
 export const storeVisitSlice = createSlice({
   name: "storeVisit",
   initialState: null as StoreVisit | null,
@@ -31,6 +44,9 @@ export const storeVisitSlice = createSlice({
       return action.payload;
     });
     builder.addCase(loadStoreVisit.fulfilled, (state, action) => {
+      return action.payload;
+    });
+    builder.addCase(updateStoreVisit.fulfilled, (state, action) => {
       return action.payload;
     });
   },

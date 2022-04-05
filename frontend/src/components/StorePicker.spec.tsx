@@ -27,7 +27,7 @@ describe("StorePicker", () => {
   describe("when no store is selected", () => {
     beforeEach(async () => {
       await act(async () => {
-        render(<StorePicker onChange={onChange} />);
+        await render(<StorePicker onChange={onChange} />);
       });
     });
 
@@ -39,9 +39,7 @@ describe("StorePicker", () => {
     it("invokes callback on store select", async () => {
       const user = userEvent.setup();
       const select = await screen.findByRole("combobox");
-      await act(async () => {
-        await user.selectOptions(select, store.name);
-      });
+      await act(() => user.selectOptions(select, store.name));
       expect(onChange).toHaveBeenCalledWith(store.self);
     });
   });
@@ -49,7 +47,7 @@ describe("StorePicker", () => {
   describe("when store is selected", () => {
     beforeEach(async () => {
       await act(async () => {
-        render(<StorePicker value={store.self} onChange={onChange} />);
+        await render(<StorePicker value={store.self} onChange={onChange} />);
       });
     });
 

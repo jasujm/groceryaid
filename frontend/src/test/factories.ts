@@ -22,5 +22,6 @@ export const storeVisitFactory = Factory.define<StoreVisit>(({ params }) => {
     self: `http://localhost/api/v1/storevisits/${id}`,
     id,
     store: storeUrl(faker.datatype.uuid()),
+    cart: [],
   };
 });

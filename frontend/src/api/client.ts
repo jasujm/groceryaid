@@ -10,6 +10,10 @@ const client = axios.create({
   timeout: 1000,
 });
 
+function getStoreVisitUrl(idOrUrl: string) {
+  return idOrUrl.match(HTTP_URL_RE) ? idOrUrl : `/storevisits/${idOrUrl}`;
+}
+
 export async function getStores() {
   const response = await client.get("/stores");
   return response.data as Store[];
@@ -21,9 +25,14 @@ export async function createStoreVisit(store: string) {
 }
 
 export async function getStoreVisit(storeVisit: string) {
-  const url = storeVisit.match(HTTP_URL_RE)
-    ? storeVisit
-    : `/storevisits/${storeVisit}`;
+  const url = getStoreVisitUrl(storeVisit);
   const response = await client.get(url);
+  return response.data as StoreVisit;
+}
+
+export async function updateStoreVisit(storeVisit: StoreVisit, patch: unknown) {
+  const response = await client.patch(storeVisit.self, patch, {
+    headers: { "content-type": "application/json-patch+json" },
+  });
   return response.data as StoreVisit;
 }

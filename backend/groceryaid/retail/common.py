@@ -46,7 +46,7 @@ class Ean(str):
     @classmethod
     def validate(cls, value: str):
         if not cls._ean_pattern.fullmatch(value):
-            raise ValueError("{value!r} is not valid EAN number")
+            raise ValueError(f"{value!r} is not valid EAN number")
         return cls(value)
 
     @classmethod

@@ -17,9 +17,9 @@ const store = stores[0];
 
 describe("App", () => {
   let history: MemoryHistory;
-  let getStores = api.getStores as jest.MockedFn<typeof api.getStores>;
+  const getStores = api.getStores as jest.MockedFn<typeof api.getStores>;
 
-  function renderApp() {
+  async function renderApp() {
     render(
       <Provider store={reduxStore}>
         <Router location={history.location} navigator={history}>
@@ -43,15 +43,11 @@ describe("App", () => {
     const createStoreVisit = api.createStoreVisit as jest.MockedFn<
       typeof api.createStoreVisit
     >;
-    await act(async () => {
-      renderApp();
-    });
+    await act(() => renderApp());
     const user = userEvent.setup();
     createStoreVisit.mockResolvedValueOnce(storeVisit);
     const select = screen.getByRole("combobox");
-    await act(async () => {
-      await user.selectOptions(select, store.name);
-    });
+    await act(() => user.selectOptions(select, store.name));
     expect(createStoreVisit).toHaveBeenCalledWith(store.self);
     expect(history.location.pathname).toEqual(`/storevisits/${storeVisit.id}`);
   });
@@ -63,9 +59,7 @@ describe("App", () => {
     >;
     getStoreVisit.mockResolvedValue(storeVisit);
     history.push(`/storevisits/${storeVisit.id}`);
-    await act(async () => {
-      renderApp();
-    });
+    await act(() => renderApp());
     expect(api.getStoreVisit).toHaveBeenCalled();
     expect(screen.getByText(store.name)).toBeInTheDocument();
   });
