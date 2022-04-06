@@ -16,7 +16,7 @@ def _prepare_cart_for_db(storevisit: StoreVisit) -> list[dict]:
         {
             "storevisit_id": storevisit.id,
             "product_id": _get_product_id(storevisit.store_id, cartproduct.ean),
-            **cartproduct.dict(exclude={"ean"}),
+            **cartproduct.dict(include={"quantity"}),
         }
         for cartproduct in storevisit.cart
     ]
@@ -50,6 +50,8 @@ async def read_store_visit(
             sqlalchemy.select(
                 [
                     db.products.c.ean,
+                    db.products.c.name,
+                    db.products.c.price,
                     db.cartproducts.c.quantity,
                 ]
             )
@@ -58,7 +60,11 @@ async def read_store_visit(
             .order_by(db.products.c.ean),
             connection=conn,
         )
-    return StoreVisit(id=id, **storevisit, cart=cartproducts.fetchall())
+    return StoreVisit(
+        id=id,
+        **storevisit,
+        cart=cartproducts.fetchall(),
+    )
 
 
 async def create_store_visit(

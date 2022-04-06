@@ -34,8 +34,15 @@ def _get_product_id(store_id, ean: str) -> uuid.UUID:
     return uuid.uuid5(store_id, ean)
 
 
-ExternalId = pydantic.constr(max_length=36)  # type: typing.Type[str]
-Name = pydantic.constr(max_length=255)  # type: typing.Type[str]
+if typing.TYPE_CHECKING:
+    ExternalId = str
+    Name = str
+    Price = decimal.Decimal
+
+else:
+    ExternalId = pydantic.constr(max_length=36)
+    Name = pydantic.constr(max_length=255)
+    Price = pydantic.condecimal(max_digits=7, decimal_places=2)
 
 
 class Ean(str):
@@ -58,66 +65,49 @@ class Ean(str):
         field_schema["pattern"] = cls._ean_pattern.pattern
 
 
-Price = pydantic.condecimal(max_digits=7, decimal_places=2)
+class Store(pydantic.BaseModel):
+    """A grocery store"""
+
+    id: uuid.UUID
+    chain: RetailChain
+    external_id: ExternalId
+    name: Name
+
+    @pydantic.root_validator(pre=True)
+    def _create_store_id(cls, values):
+        if "id" not in values:
+            values["id"] = _get_store_id(values["chain"], values["external_id"])
+        return values
 
 
-if typing.TYPE_CHECKING:
+class Product(pydantic.BaseModel):
+    """A single product within a given store
 
-    class Store(pydantic.BaseModel):
-        id: uuid.UUID
-        chain: RetailChain
-        external_id: str
-        name: str
+    There is no store independent product model.  Although the same product (by
+    EAN code) may (and often is) sold in different stores, it may have different
+    name or price.
+    """
 
-    class Product(pydantic.BaseModel):
-        id: uuid.UUID
-        store_id: uuid.UUID
-        ean: str
-        name: str
-        price: decimal.Decimal
+    id: uuid.UUID
+    store_id: uuid.UUID
+    ean: Ean
+    name: Name
+    price: Price
 
-else:
-
-    class Store(pydantic.BaseModel):
-        """A grocery store"""
-
-        id: uuid.UUID
-        chain: RetailChain
-        external_id: ExternalId
-        name: Name
-
-        @pydantic.root_validator(pre=True)
-        def _create_store_id(cls, values):
-            if "id" not in values:
-                values["id"] = _get_store_id(values["chain"], values["external_id"])
-            return values
-
-    class Product(pydantic.BaseModel):
-        """A single product within a given store
-
-        There is no store independent product model.  Although the same product (by
-        EAN code) may (and often is) sold in different stores, it may have different
-        name or price.
-        """
-
-        id: uuid.UUID
-        store_id: uuid.UUID
-        ean: Ean
-        name: Name
-        price: Price
-
-        # pylint: disable=all
-        @pydantic.root_validator(pre=True)
-        def _create_product_id(cls, values):
-            if "id" not in values:
-                values["id"] = _get_product_id(values["store_id"], values["ean"])
-            return values
+    # pylint: disable=all
+    @pydantic.root_validator(pre=True)
+    def _create_product_id(cls, values):
+        if "id" not in values:
+            values["id"] = _get_product_id(values["store_id"], values["ean"])
+        return values
 
 
 class CartProduct(pydantic.BaseModel):
     """Product and quantity"""
 
     ean: Ean
+    name: typing.Optional[Name]
+    price: typing.Optional[Price]
     quantity: pydantic.PositiveInt
 
 

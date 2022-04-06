@@ -1,4 +1,4 @@
-export type { Store, CartProduct, StoreVisit } from "./types";
+export type { Store, Product, CartProduct, StoreVisit } from "./types";
 export {
   getStores,
   createStoreVisit,

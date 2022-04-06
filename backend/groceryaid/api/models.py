@@ -12,77 +12,63 @@ from hrefs.starlette import ReferrableModel
 from ..retail import RetailChain, Name, Ean, Price
 
 
-if typing.TYPE_CHECKING:
+class Store(ReferrableModel):
+    """A grocery store"""
 
-    class Store(ReferrableModel):
-        self: hrefs.Href["Store"]
-        id: uuid.UUID
-        chain: RetailChain
-        name: str
+    self: hrefs.Href["Store"] = pydantic.Field(
+        title="Self hyperlink", description="The URL of the store"
+    )
+    id: uuid.UUID
+    chain: RetailChain = pydantic.Field(
+        description="The retail chain this store belongs to"
+    )
+    name: Name = pydantic.Field(description="The name of the store")
 
-    class Product(ReferrableModel):
-        self: hrefs.Href["Product"]
-        store: hrefs.Href[Store]
-        ean: str
-        name: str
-        price: decimal.Decimal
+    # pylint: disable=all
+    @pydantic.root_validator(pre=True)
+    def _populate_self(cls, values):
+        values["self"] = values["id"]
+        return values
 
-else:
+    class Config:
+        details_view = "get_store"
 
-    class Store(ReferrableModel):
-        """A grocery store"""
 
-        self: hrefs.Href["Store"] = pydantic.Field(
-            title="Self hyperlink", description="The URL of the store"
-        )
-        id: uuid.UUID
-        chain: RetailChain = pydantic.Field(
-            description="The retail chain this store belongs to"
-        )
-        name: Name = pydantic.Field(description="The name of the store")
+Store.update_forward_refs()
 
-        # pylint: disable=all
-        @pydantic.root_validator(pre=True)
-        def _populate_self(cls, values):
-            values["self"] = values["id"]
-            return values
 
-        class Config:
-            details_view = "get_store"
+class Product(ReferrableModel):
+    """A single product within a given store
 
-    Store.update_forward_refs()
+    There is no store independent product model.  Although the same product (by
+    EAN code) may (and often is) sold in different stores, it may have different
+    name or price.
+    """
 
-    class Product(ReferrableModel):
-        """A single product within a given store
+    self: hrefs.Href["Product"] = pydantic.Field(
+        title="Self hyperlink", description="The URL of the product"
+    )
+    store: typing.Annotated[hrefs.Href[Store], hrefs.PrimaryKey] = pydantic.Field(
+        title="Store hyperlink",
+        description="The store this product is sold in",
+    )
+    ean: typing.Annotated[Ean, hrefs.PrimaryKey] = pydantic.Field(
+        description="The EAN code of the product",
+    )
+    name: Name = pydantic.Field(description="The name of the product")
+    price: Price = pydantic.Field(description="The price per unit")
 
-        There is no store independent product model.  Although the same product (by
-        EAN code) may (and often is) sold in different stores, it may have different
-        name or price.
-        """
+    # pylint: disable=all
+    @pydantic.root_validator(pre=True)
+    def _populate_self(cls, values):
+        values["self"] = values["store"], values["ean"]
+        return values
 
-        self: hrefs.Href["Product"] = pydantic.Field(
-            title="Self hyperlink", description="The URL of the product"
-        )
-        store: typing.Annotated[hrefs.Href[Store], hrefs.PrimaryKey] = pydantic.Field(
-            title="Store hyperlink",
-            description="The store this product is sold in",
-        )
-        ean: typing.Annotated[Ean, hrefs.PrimaryKey] = pydantic.Field(
-            description="The EAN code of the product",
-        )
-        name: Name = pydantic.Field(description="The name of the product")
-        price: Price = pydantic.Field(description="The price per unit")
+    class Config:
+        details_view = "get_product"
 
-        # pylint: disable=all
-        @pydantic.root_validator(pre=True)
-        def _populate_self(cls, values):
-            values["self"] = values["store"], values["ean"]
-            return values
 
-        class Config:
-            details_view = "get_product"
-
-    Product.update_forward_refs()
+Product.update_forward_refs()
 
 
 class _CartProductBase(pydantic.BaseModel):
@@ -92,7 +78,8 @@ class _CartProductBase(pydantic.BaseModel):
 class CartProduct(_CartProductBase):
     """Product and quantity"""
 
-    product: hrefs.Href[Product]
+    product: Product
+    total_price: Price
 
 
 class _StoreVisitBase(pydantic.BaseModel):
@@ -127,8 +114,8 @@ StoreVisit.update_forward_refs()
 class CartProductCreate(_CartProductBase):
     """Payload for creating a product in cart"""
 
-    product: hrefs.Href[Product] | Ean = pydantic.Field(
-        description="Product is identified either as hyperlink or EAN number. "
+    product: Product | hrefs.Href[Product] | Ean = pydantic.Field(
+        description="Product is identified either by hyperlink or EAN number. "
         "In the latter case the store is inferred from the context."
     )
 

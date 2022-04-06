@@ -52,7 +52,12 @@ def product(products):
 async def storevisit(store, products):
     """Returns a store visit that will also be inserted into the database"""
     cartproducts = [
-        CartProductFactory(product_id=product.id, ean=product.ean)
+        CartProductFactory(
+            product_id=product.id,
+            ean=product.ean,
+            name=product.name,
+            price=product.price,
+        )
         for product in products[:5]
     ]
     storevisit = StoreVisitFactory(

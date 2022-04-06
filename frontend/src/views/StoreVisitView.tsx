@@ -5,6 +5,7 @@ import { useSelector, useDispatch } from "../hooks";
 import { loadStoreVisit, updateStoreVisit } from "../reducers/storevisit";
 import { addProduct } from "../api/storeVisitOps";
 import ProductPicker from "../components/ProductPicker";
+import CartList from "../components/CartList";
 
 export default function StoreVisitView() {
   const storeVisit = useSelector((state) => state.storeVisit);
@@ -30,7 +31,7 @@ export default function StoreVisitView() {
   return (
     <div className="store-visit-view">
       <ProductPicker onAddProduct={onAddProduct} />
-      <pre>{JSON.stringify(storeVisit, null, 2)}</pre>
+      <CartList cart={storeVisit?.cart ?? []} />
     </div>
   );
 }

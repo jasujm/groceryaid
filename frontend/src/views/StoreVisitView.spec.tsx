@@ -4,7 +4,7 @@ import { render, screen, act } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import * as reactRouter from "react-router-dom";
 
-import { storeVisitFactory } from "../test/factories";
+import { storeVisitFactory, cartProductFactory } from "../test/factories";
 import reduxStore from "../store";
 import * as api from "../api";
 
@@ -47,23 +47,16 @@ describe("StoreVisitView", () => {
   });
 
   it("adds products", async () => {
-    const ean = "1234567890123";
     const updatedStoreVisit = {
       ...storeVisit,
-      cart: [
-        ...storeVisit.cart,
-        {
-          product: `${storeVisit.store}/products/${ean}`,
-          quantity: 1,
-        },
-      ],
+      cart: [...storeVisit.cart, cartProductFactory.build()],
     };
     const updateStoreVisit = api.updateStoreVisit as jest.MockedFn<
       typeof api.updateStoreVisit
     >;
     updateStoreVisit.mockResolvedValueOnce(updatedStoreVisit);
     const input = screen.getByPlaceholderText(/ean/i);
-    await userEvent.type(input, ean);
+    await userEvent.type(input, updatedStoreVisit.cart[0].product.ean);
     const button = screen.getByRole("button");
     await act(() => userEvent.click(button));
     expect(updateStoreVisit).toHaveBeenCalled();

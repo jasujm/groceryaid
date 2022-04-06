@@ -14,8 +14,15 @@ def test_get_store_visit(testclient, storevisit):
         "store": store_url,
         "cart": [
             {
-                "product": f"{store_url}/products/{product.ean}",
+                "product": {
+                    "self": f"{store_url}/products/{product.ean}",
+                    "store": store_url,
+                    "ean": product.ean,
+                    "name": product.name,
+                    "price": float(product.price),
+                },
                 "quantity": product.quantity,
+                "total_price": float(product.quantity * product.price),
             }
             for product in storevisit.cart
         ],
@@ -52,8 +59,15 @@ def test_post_store_visit(testclient, store, product, faker):
         "store": store_url,
         "cart": [
             {
-                "product": product_url,
+                "product": {
+                    "self": product_url,
+                    "store": store_url,
+                    "ean": product.ean,
+                    "name": product.name,
+                    "price": float(product.price),
+                },
                 "quantity": quantity,
+                "total_price": float(product.price * quantity),
             }
         ],
     }
@@ -84,8 +98,15 @@ def test_post_store_visit_ean_lookup(testclient, store, product, faker):
         "store": store_url,
         "cart": [
             {
-                "product": f"{store_url}/products/{product.ean}",
+                "product": {
+                    "self": f"{store_url}/products/{product.ean}",
+                    "store": store_url,
+                    "ean": product.ean,
+                    "name": product.name,
+                    "price": float(product.price),
+                },
                 "quantity": quantity,
+                "total_price": float(product.price * quantity),
             }
         ],
     }
@@ -143,8 +164,15 @@ def test_put_store_visit(testclient, storevisit, store, product, faker):
         "store": store_url,
         "cart": [
             {
-                "product": f"{store_url}/products/{product.ean}",
+                "product": {
+                    "self": f"{store_url}/products/{product.ean}",
+                    "store": store_url,
+                    "ean": product.ean,
+                    "name": product.name,
+                    "price": float(product.price),
+                },
                 "quantity": quantity,
+                "total_price": float(product.price * quantity),
             }
         ],
     }
@@ -181,8 +209,15 @@ def test_patch_store_visit(testclient, storevisit, store, product, faker):
         "store": store_url,
         "cart": [
             {
-                "product": f"{store_url}/products/{product.ean}",
+                "product": {
+                    "self": f"{store_url}/products/{product.ean}",
+                    "store": store_url,
+                    "ean": product.ean,
+                    "name": product.name,
+                    "price": float(product.price),
+                },
                 "quantity": quantity,
+                "total_price": float(product.price * quantity),
             }
         ],
     }

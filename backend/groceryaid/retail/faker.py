@@ -63,6 +63,8 @@ else:
             model = CartProduct
 
         ean = factory.Faker("ean")
+        name = factory.Sequence(lambda n: f"Cart product {n}")
+        price = factory.Faker("pydecimal", positive=True, max_value=10, right_digits=2)
         quantity = factory.Faker("pyint", min_value=1, max_value=5)
 
     class StoreVisitFactory(factory.Factory):

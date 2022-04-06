@@ -19,9 +19,15 @@ async def test_read_store_visit_nonexistent(faker):
 @pytest.mark.asyncio
 async def test_update_store_visit(storevisit, products):
     storevisit.cart[0].ean = products[-1].ean
+    storevisit.cart[0].name = products[-1].name
+    storevisit.cart[0].price = products[-1].price
     storevisit.cart[1].quantity += 1
     del storevisit.cart[-2:]
-    storevisit.cart.append(CartProductFactory(ean=products[-2].ean))
+    storevisit.cart.append(
+        CartProductFactory(
+            ean=products[-2].ean, name=products[-2].name, price=products[-2].price
+        )
+    )
     storevisit.cart.sort(key=lambda cp: cp.ean)
     await storevisits.update_store_visit(storevisit)
     assert await storevisits.read_store_visit(storevisit.id) == storevisit
