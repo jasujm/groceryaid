@@ -113,14 +113,33 @@ def test_post_store_visit_ean_lookup(testclient, store, product, faker):
 
 
 def test_post_store_visit_unknown_store(testclient, faker):
-    store_url = f"http://testserver/api/v1/stores/{faker.uuid4()}"
     response = testclient.post(
         "http://testserver/api/v1/storevisits",
         json={
-            "store": store_url,
+            "store": faker.uuid4(),
         },
     )
     assert response.status_code == fastapi.status.HTTP_400_BAD_REQUEST
+
+
+def test_post_store_visit_duplicate_product(testclient, store, product, faker):
+    response = testclient.post(
+        "http://testserver/api/v1/storevisits",
+        json={
+            "store": str(store.id),
+            "cart": [
+                {
+                    "product": product.ean,
+                    "quantity": faker.pyint(min_value=1),
+                },
+                {
+                    "product": product.ean,
+                    "quantity": faker.pyint(min_value=1),
+                },
+            ],
+        },
+    )
+    assert response.status_code == fastapi.status.HTTP_422_UNPROCESSABLE_ENTITY
 
 
 def test_post_store_visit_unknown_product(testclient, store, faker):
@@ -239,7 +258,23 @@ def test_patch_store_visit_not_found(testclient, faker):
     assert response.status_code == fastapi.status.HTTP_404_NOT_FOUND
 
 
-def test_patch_store_visit_invalid_patch(testclient, storevisit):
+def test_patch_store_visit_failed_patch(testclient, storevisit):
+    storevisit_url = f"http://testserver/api/v1/storevisits/{storevisit.id}"
+    response = testclient.patch(
+        storevisit_url,
+        headers={"Content-Type": "application/json-patch+json"},
+        json=[
+            {
+                "op": "test",
+                "path": "/store",
+                "value": "this is not a astore",
+            },
+        ],
+    )
+    assert response.status_code == fastapi.status.HTTP_409_CONFLICT
+
+
+def test_patch_store_visit_invalid_model(testclient, storevisit):
     storevisit_url = f"http://testserver/api/v1/storevisits/{storevisit.id}"
     response = testclient.patch(
         storevisit_url,
@@ -252,4 +287,4 @@ def test_patch_store_visit_invalid_patch(testclient, storevisit):
             },
         ],
     )
-    assert response.status_code == fastapi.status.HTTP_409_CONFLICT
+    assert response.status_code == fastapi.status.HTTP_400_BAD_REQUEST

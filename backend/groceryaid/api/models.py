@@ -1,5 +1,6 @@
 """API models"""
 
+import collections
 import decimal
 import uuid
 import typing
@@ -115,24 +116,47 @@ class CartProductCreate(_CartProductBase):
     """Payload for creating a product in cart"""
 
     product: Product | hrefs.Href[Product] | Ean = pydantic.Field(
-        description="Product is identified either by hyperlink or EAN number. "
-        "In the latter case the store is inferred from the context."
+        description="""
+                    Product is identified either by hyperlink or EAN number.  In
+                    the latter case the store is inferred from the context.
+                    """
     )
 
+    def get_ean(self) -> Ean:
+        """Get EAN code of the product"""
+        if isinstance(self.product, Product):
+            return self.product.ean
+        elif isinstance(self.product, Ean):
+            return self.product
+        return self.product.key.ean
 
-class StoreVisitCreate(_StoreVisitBase):
+
+class _CartCreateMixin(pydantic.BaseModel):
+    cart: list[CartProductCreate] = pydantic.Field(
+        [],
+        description="""The items in the cart.  Each product in the cart must be
+                    unique.  To represent multiple products, use the
+                    ``quantity`` attribute of the cart products.
+                    """,
+    )
+
+    def get_eans(self) -> typing.Iterable[Ean]:
+        """Get all EANs of this cart"""
+        for cartproduct in self.cart:
+            yield cartproduct.get_ean()
+
+    @pydantic.validator("cart")
+    def validate_cart_has_unique_products(cls, cart: list[CartProductCreate]):
+        eans = collections.Counter(cartproduct.get_ean() for cartproduct in cart)
+        duplicate_eans = list(ean for (ean, count) in eans.items() if count > 1)
+        if duplicate_eans:
+            raise ValueError(f"Duplicate EAN codes: {', '.join(duplicate_eans)}")
+        return cart
+
+
+class StoreVisitCreate(_CartCreateMixin, _StoreVisitBase):
     """Payload for creating a store visit"""
 
-    cart: list[CartProductCreate] = pydantic.Field(
-        [],
-        description="The items in the cart",
-    )
 
-
-class StoreVisitUpdate(pydantic.BaseModel):
+class StoreVisitUpdate(_CartCreateMixin):
     """Payload for updating a store visit"""
-
-    cart: list[CartProductCreate] = pydantic.Field(
-        [],
-        description="The items in the cart",
-    )

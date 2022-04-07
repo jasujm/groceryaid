@@ -3,14 +3,14 @@
 import typing
 import uuid
 
-import hrefs
 import fastapi
 import jsonpatch
+import jsonpointer
 import pydantic
 import sqlalchemy
 import sqlalchemy.ext.asyncio as sqlaio
 
-from .models import Product, StoreVisit, StoreVisitCreate, StoreVisitUpdate
+from .models import StoreVisit, StoreVisitCreate, StoreVisitUpdate
 
 from .. import db
 from ..retail import storevisits
@@ -25,14 +25,6 @@ _RESPONSE_404 = {
 }
 
 _ProductProxy = typing.Mapping[str, typing.Any]
-
-
-def _get_cart_product_ean(product: Product | hrefs.Href | str) -> str:
-    if isinstance(product, Product):
-        return product.ean
-    if isinstance(product, str):
-        return product
-    return product.key.ean
 
 
 async def _get_json_patch(
@@ -68,9 +60,7 @@ async def _get_product_records(
     storevisit: StoreVisitCreate | StoreVisitUpdate,
     store_id: uuid.UUID,
 ) -> _ProductProxy:
-    product_eans = set(
-        _get_cart_product_ean(cartproduct.product) for cartproduct in storevisit.cart
-    )
+    product_eans = set(storevisit.get_eans())
     known_products = (
         await db.execute(
             sqlalchemy.select([db.products.c.ean, db.products.c.name, db.products.c.price]).where(  # type: ignore
@@ -96,7 +86,7 @@ def _prepare_store_visit_for_db(
         **kwargs,
         cart=[
             {
-                "ean": _get_cart_product_ean(cartproduct.product),
+                "ean": cartproduct.get_ean(),
                 **cartproduct.dict(exclude={"product", "ean"}),
             }
             for cartproduct in storevisit.cart
@@ -240,10 +230,10 @@ async def patch_store_visit(
     """
     Partially update a store visit
 
-    The update happens as if by applying the JSON patch in the body to the
-    representation returned by the corresponding GET request. If the JSON patch
+    The update happens as if by applying the JSON Patch in the body to the
+    representation returned by the GET request to the same URL.  If the patch
     doesn't apply, or the resulting JSON document doesn't represent a valid
-    store visit, the operation fails. Fields that cannot be updated with a PUT
+    store visit, the operation fails.  Fields that cannot be updated with a PUT
     request cannot be updated with a PATCH request either, and are ignored.
     """
     async with db.get_connection() as connection:
@@ -252,10 +242,16 @@ async def patch_store_visit(
         store_id = old_storevisit.store.key
         try:
             new_storevisit_data = patch.apply(old_storevisit.dict())
-            new_storevisit = StoreVisitUpdate(**new_storevisit_data)
-        except (pydantic.ValidationError, jsonpatch.JsonPatchException) as ex:
+        except (jsonpatch.JsonPatchException, jsonpointer.JsonPointerException) as ex:
             raise fastapi.HTTPException(
                 status_code=fastapi.status.HTTP_409_CONFLICT,
+                 detail=f"Failed to process JSON Patch: {ex}",
+            )
+        try:
+            new_storevisit = StoreVisitUpdate(**new_storevisit_data)
+        except pydantic.ValidationError as ex:
+            raise fastapi.HTTPException(
+                status_code=fastapi.status.HTTP_400_BAD_REQUEST,
                 detail=f"Failed to update store visit: {ex}",
             ) from ex
         products = await _get_product_records(connection, new_storevisit, store_id)
