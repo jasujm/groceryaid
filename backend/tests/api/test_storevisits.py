@@ -8,7 +8,8 @@ def test_get_store_visit(testclient, storevisit):
     response = testclient.get(store_visit_url)
     store_url = f"http://testserver/api/v1/stores/{storevisit.store_id}"
     assert response.status_code == fastapi.status.HTTP_200_OK
-    assert response.json() == {
+    response_json = response.json()
+    assert response_json == {
         "self": store_visit_url,
         "id": str(storevisit.id),
         "store": store_url,
@@ -26,6 +27,7 @@ def test_get_store_visit(testclient, storevisit):
             }
             for product in storevisit.cart
         ],
+        "total_price": response_json["total_price"],
     }
 
 
@@ -70,6 +72,7 @@ def test_post_store_visit(testclient, store, product, faker):
                 "total_price": float(product.price * quantity),
             }
         ],
+        "total_price": storevisit_in_response["total_price"],
     }
 
 
@@ -92,7 +95,8 @@ def test_post_store_visit_ean_lookup(testclient, store, product, faker):
     storevisit_url = response.headers["Location"]
     expected_storevisit_id = storevisit_url.split("/")[-1]
     response = testclient.get(storevisit_url)
-    assert response.json() == {
+    response_json = response.json()
+    assert response_json == {
         "self": storevisit_url,
         "id": expected_storevisit_id,
         "store": store_url,
@@ -109,6 +113,7 @@ def test_post_store_visit_ean_lookup(testclient, store, product, faker):
                 "total_price": float(product.price * quantity),
             }
         ],
+        "total_price": response_json["total_price"],
     }
 
 
@@ -177,7 +182,8 @@ def test_put_store_visit(testclient, storevisit, store, product, faker):
         },
     )
     assert response.status_code == fastapi.status.HTTP_200_OK, response.text
-    assert response.json() == {
+    response_json = response.json()
+    assert response_json == {
         "self": storevisit_url,
         "id": str(storevisit.id),
         "store": store_url,
@@ -194,6 +200,7 @@ def test_put_store_visit(testclient, storevisit, store, product, faker):
                 "total_price": float(product.price * quantity),
             }
         ],
+        "total_price": response_json["total_price"],
     }
 
 
@@ -222,7 +229,8 @@ def test_patch_store_visit(testclient, storevisit, store, product, faker):
         ],
     )
     assert response.status_code == fastapi.status.HTTP_200_OK, response.text
-    assert response.json() == {
+    response_json = response.json()
+    assert response_json == {
         "self": storevisit_url,
         "id": str(storevisit.id),
         "store": store_url,
@@ -239,6 +247,7 @@ def test_patch_store_visit(testclient, storevisit, store, product, faker):
                 "total_price": float(product.price * quantity),
             }
         ],
+        "total_price": response_json["total_price"],
     }
 
 

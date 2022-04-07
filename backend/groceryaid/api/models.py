@@ -80,7 +80,7 @@ class CartProduct(_CartProductBase):
     """Product and quantity"""
 
     product: Product
-    total_price: Price
+    total_price: Price = pydantic.Field(description="Price times quantity")
 
 
 class _StoreVisitBase(pydantic.BaseModel):
@@ -98,6 +98,7 @@ class StoreVisit(_StoreVisitBase, ReferrableModel):
     )
     id: uuid.UUID
     cart: list[CartProduct] = pydantic.Field(description="The items in the cart")
+    total_price: Price = pydantic.Field(description="Total price of all items")
 
     # pylint: disable=all
     @pydantic.root_validator(pre=True)

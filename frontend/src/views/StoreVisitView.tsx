@@ -37,6 +37,7 @@ export default function StoreVisitView() {
       <ProductPicker onAddProduct={onAddProduct} />
       <CartList
         cart={storeVisit?.cart ?? []}
+        totalPrice={storeVisit?.total_price}
         onChangeQuantity={onChangeQuantity}
       />
     </div>

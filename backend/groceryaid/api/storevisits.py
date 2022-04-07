@@ -112,15 +112,17 @@ def _prepare_store_visit_for_api(
     storevisit: DbStoreVisit, products: typing.Mapping[str, _ProductProxy]
 ) -> dict:
     store_id = storevisit.store_id
+    cart = [
+        _prepare_cart_product_for_api(
+            store_id, cartproduct, products.get(cartproduct.ean, {})
+        )
+        for cartproduct in storevisit.cart
+    ]
     return {
         "id": storevisit.id,
         "store": store_id,
-        "cart": [
-            _prepare_cart_product_for_api(
-                store_id, cartproduct, products.get(cartproduct.ean, {})
-            )
-            for cartproduct in storevisit.cart
-        ],
+        "cart": cart,
+        "total_price": sum(cartproduct["total_price"] for cartproduct in cart),
     }
 
 

@@ -35,8 +35,8 @@ export const productFactory = Factory.define<Product>(({ params }) => {
 export const cartProductFactory = Factory.define<CartProduct>(() => {
   return {
     product: productFactory.build(),
-    quantity: faker.datatype.number(),
-    total_price: faker.datatype.number(),
+    quantity: faker.datatype.number({ min: 1 }),
+    total_price: faker.datatype.number({ min: 0 }),
   };
 });
 
@@ -47,5 +47,6 @@ export const storeVisitFactory = Factory.define<StoreVisit>(({ params }) => {
     id,
     store: storeUrl(faker.datatype.uuid()),
     cart: [],
+    total_price: faker.datatype.number({ min: 0 }),
   };
 });

@@ -23,4 +23,5 @@ export interface StoreVisit {
   id: string;
   store: string;
   cart: CartProduct[];
+  total_price: number;
 }

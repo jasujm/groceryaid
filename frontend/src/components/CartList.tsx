@@ -6,10 +6,15 @@ import { CartProduct } from "../api";
 
 export interface Props {
   cart: readonly CartProduct[];
+  totalPrice?: number;
   onChangeQuantity?: (index: number, quantity: number) => void;
 }
 
-export default function CartList({ cart, onChangeQuantity }: Props) {
+export default function CartList({
+  cart,
+  totalPrice,
+  onChangeQuantity,
+}: Props) {
   return (
     <div className="cart-list">
       <Table className="cart-list-table">
@@ -23,7 +28,7 @@ export default function CartList({ cart, onChangeQuantity }: Props) {
         </thead>
         <tbody>
           {cart.map((cartProduct, index) => (
-            <tr key={cartProduct.product.self}>
+            <tr key={cartProduct.product.self} className="cart-product">
               <td>{cartProduct.product.name}</td>
               <td>{cartProduct.product.ean}</td>
               <td>
@@ -39,6 +44,12 @@ export default function CartList({ cart, onChangeQuantity }: Props) {
               <td>{cartProduct.total_price}</td>
             </tr>
           ))}
+          {totalPrice ? (
+            <tr className="cart-total-price">
+              <td colSpan={3}></td>
+              <td>{totalPrice}</td>
+            </tr>
+          ) : undefined}
         </tbody>
       </Table>
     </div>
