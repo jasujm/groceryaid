@@ -105,6 +105,11 @@ class StoreVisit(_StoreVisitBase, ReferrableModel):
         values["self"] = values["id"]
         return values
 
+    @pydantic.validator("cart")
+    def _ensure_cart_is_ordered(cls, cart: list[CartProduct]):
+        cart.sort(key=lambda cartproduct: cartproduct.product.ean)
+        return cart
+
     class Config:
         details_view = "get_store_visit"
 

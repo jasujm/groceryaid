@@ -245,7 +245,7 @@ async def patch_store_visit(
         except (jsonpatch.JsonPatchException, jsonpointer.JsonPointerException) as ex:
             raise fastapi.HTTPException(
                 status_code=fastapi.status.HTTP_409_CONFLICT,
-                 detail=f"Failed to process JSON Patch: {ex}",
+                detail=f"Failed to process JSON Patch: {ex}",
             )
         try:
             new_storevisit = StoreVisitUpdate(**new_storevisit_data)

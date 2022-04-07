@@ -13,3 +13,13 @@ export function addProduct(ean: string, quantity: number = 1) {
     },
   ];
 }
+
+export function changeCartProductQuantity(index: number, quantity: number) {
+  return [
+    {
+      op: "replace",
+      path: `/cart/${index}/quantity`,
+      value: quantity,
+    },
+  ];
+}
