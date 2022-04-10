@@ -1,13 +1,44 @@
 import React from "react";
 import Form from "react-bootstrap/Form";
 import Table from "react-bootstrap/Table";
+import debounce from "lodash/debounce";
 
 import { CartProduct } from "../api";
+
+interface QuantityInputProps {
+  value: number;
+  onChange: (value: number) => void;
+}
 
 export interface Props {
   cart: readonly CartProduct[];
   totalPrice?: number;
   onChangeQuantity?: (index: number, quantity: number) => void;
+}
+
+function QuantityInput({ value, onChange }: QuantityInputProps) {
+  const [uncommitedValue, setUncommitedValue] = React.useState<
+    number | undefined
+  >(undefined);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const debouncedOnChange = React.useCallback(debounce(onChange, 200), []);
+  React.useEffect(() => {
+    setUncommitedValue(undefined);
+    debouncedOnChange.cancel();
+  }, [value, debouncedOnChange]);
+  function handleOnChange(value: number) {
+    setUncommitedValue(value);
+    debouncedOnChange(value);
+  }
+  return (
+    <Form.Control
+      className="quantity-input"
+      type="number"
+      min="1"
+      value={uncommitedValue ?? value}
+      onChange={(event) => handleOnChange(Number(event.target.value))}
+    />
+  );
 }
 
 export default function CartList({
@@ -32,13 +63,9 @@ export default function CartList({
               <td>{cartProduct.product.name}</td>
               <td>{cartProduct.product.ean}</td>
               <td>
-                <Form.Control
-                  type="number"
-                  min="1"
+                <QuantityInput
                   value={cartProduct.quantity}
-                  onChange={(event) =>
-                    onChangeQuantity?.(index, Number(event.target.value))
-                  }
+                  onChange={(quantity) => onChangeQuantity?.(index, quantity)}
                 />
               </td>
               <td>{cartProduct.total_price}</td>

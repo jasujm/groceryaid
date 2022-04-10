@@ -1,5 +1,5 @@
 import React from "react";
-import { render, screen } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { faker } from "@faker-js/faker";
 
@@ -46,11 +46,16 @@ describe("CartList", () => {
         await userEvent.type(input, "0");
       })
     );
-    cart.forEach((cartProduct, index) => {
-      expect(onChangeQuantity).toHaveBeenCalledWith(
-        index,
-        10 * cartProduct.quantity
-      );
-    });
+    await waitFor(
+      () => {
+        cart.forEach((cartProduct, index) => {
+          expect(onChangeQuantity).toHaveBeenCalledWith(
+            index,
+            10 * cartProduct.quantity
+          );
+        });
+      },
+      { timeout: 300 }
+    );
   });
 });
