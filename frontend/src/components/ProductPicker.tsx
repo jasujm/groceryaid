@@ -4,7 +4,7 @@ import Button from "react-bootstrap/Button";
 import InputGroup from "react-bootstrap/InputGroup";
 
 export interface Props {
-  onAddProduct?: (ean: string) => void;
+  onAddProduct?: (ean: string) => Promise<void>;
 }
 
 export default function ProductPicker({ onAddProduct }: Props) {
@@ -13,8 +13,10 @@ export default function ProductPicker({ onAddProduct }: Props) {
   function addProduct(event: FormEvent) {
     event.preventDefault();
     if (onAddProduct) {
-      onAddProduct(ean);
-      setEan("");
+      // TODO: display error
+      onAddProduct(ean)
+        .then(() => setEan(""))
+        .catch((e) => e);
     }
   }
 

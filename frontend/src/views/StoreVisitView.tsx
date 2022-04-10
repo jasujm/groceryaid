@@ -13,17 +13,19 @@ export default function StoreVisitView() {
   const dispatch = useDispatch();
 
   function dispatchUpdateStoreVisit(patch: unknown) {
+    // TODO: display errors for failed updates
     if (storeVisit) {
-      dispatch(updateStoreVisit({ storeVisit, patch }));
+      return dispatch(updateStoreVisit({ storeVisit, patch })).unwrap();
     }
+    return Promise.resolve();
   }
 
   async function onAddProduct(ean: string) {
-    dispatchUpdateStoreVisit(addProduct(ean));
+    await dispatchUpdateStoreVisit(addProduct(ean));
   }
 
   async function onChangeQuantity(index: number, quantity: number) {
-    dispatchUpdateStoreVisit(changeCartProductQuantity(index, quantity));
+    await dispatchUpdateStoreVisit(changeCartProductQuantity(index, quantity));
   }
 
   React.useEffect(() => {
