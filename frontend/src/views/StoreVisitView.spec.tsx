@@ -22,7 +22,7 @@ describe("StoreVisitView", () => {
     typeof reactRouter.useParams
   >;
 
-  async function renderView() {
+  function renderView() {
     render(
       <Provider store={reduxStore}>
         <StoreVisitView />

@@ -1,5 +1,5 @@
 import React from "react";
-import { render, screen, act } from "@testing-library/react";
+import { render, screen, act, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 
 import StorePicker from "./StorePicker";
@@ -27,8 +27,9 @@ describe("StorePicker", () => {
   describe("when no store is selected", () => {
     beforeEach(async () => {
       await act(async () => {
-        await render(<StorePicker onChange={onChange} />);
+        render(<StorePicker onChange={onChange} />);
       });
+      await waitFor(() => expect(getStores).toHaveBeenCalled());
     });
 
     it("displays no store", async () => {
@@ -40,15 +41,16 @@ describe("StorePicker", () => {
       const user = userEvent.setup();
       const select = await screen.findByRole("combobox");
       await act(() => user.selectOptions(select, store.name));
-      expect(onChange).toHaveBeenCalledWith(store.self);
+      await waitFor(() => expect(onChange).toHaveBeenCalledWith(store.self));
     });
   });
 
   describe("when store is selected", () => {
     beforeEach(async () => {
       await act(async () => {
-        await render(<StorePicker value={store.self} onChange={onChange} />);
+        render(<StorePicker value={store.self} onChange={onChange} />);
       });
+      await waitFor(() => expect(getStores).toHaveBeenCalled());
     });
 
     it("displays selected store", async () => {

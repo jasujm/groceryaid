@@ -1,7 +1,7 @@
 import React from "react";
 import { Provider } from "react-redux";
 import { Router } from "react-router-dom";
-import { render, screen, act } from "@testing-library/react";
+import { render, screen, act, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { createMemoryHistory, MemoryHistory } from "history";
 
@@ -19,7 +19,7 @@ describe("App", () => {
   let history: MemoryHistory;
   const getStores = api.getStores as jest.MockedFn<typeof api.getStores>;
 
-  async function renderApp() {
+  function renderApp() {
     render(
       <Provider store={reduxStore}>
         <Router location={history.location} navigator={history}>
@@ -43,10 +43,12 @@ describe("App", () => {
     const createStoreVisit = api.createStoreVisit as jest.MockedFn<
       typeof api.createStoreVisit
     >;
-    await act(() => renderApp());
+    await act(async () => renderApp());
+    await waitFor(() => expect(getStores).toHaveBeenCalled());
     const user = userEvent.setup();
     createStoreVisit.mockResolvedValueOnce(storeVisit);
     const select = screen.getByRole("combobox");
+    await screen.findByText(store.name);
     await act(() => user.selectOptions(select, store.name));
     expect(createStoreVisit).toHaveBeenCalledWith(store.self);
     expect(history.location.pathname).toEqual(`/storevisits/${storeVisit.id}`);
@@ -59,7 +61,8 @@ describe("App", () => {
     >;
     getStoreVisit.mockResolvedValue(storeVisit);
     history.push(`/storevisits/${storeVisit.id}`);
-    await act(() => renderApp());
+    await act(async () => renderApp());
+    await waitFor(() => expect(getStores).toHaveBeenCalled());
     expect(api.getStoreVisit).toHaveBeenCalled();
     expect(screen.getByText(store.name)).toBeInTheDocument();
   });
