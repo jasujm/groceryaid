@@ -3,7 +3,7 @@ import Form from "react-bootstrap/Form";
 import Table from "react-bootstrap/Table";
 import debounce from "lodash/debounce";
 
-import { CartProduct } from "../api";
+import { Cart } from "../api";
 
 interface QuantityInputProps {
   value: number;
@@ -11,8 +11,7 @@ interface QuantityInputProps {
 }
 
 export interface Props {
-  cart: readonly CartProduct[];
-  totalPrice?: number;
+  cart: Cart;
   onChangeQuantity?: (index: number, quantity: number) => void;
 }
 
@@ -35,6 +34,7 @@ function QuantityInput({ value, onChange }: QuantityInputProps) {
       className="quantity-input"
       type="number"
       min="1"
+      max="999"
       value={uncommitedValue ?? value}
       onChange={(event) => handleOnChange(Number(event.target.value))}
     />
@@ -42,8 +42,7 @@ function QuantityInput({ value, onChange }: QuantityInputProps) {
 }
 
 export default function CartList({
-  cart,
-  totalPrice,
+  cart: { items, total_price: totalPrice },
   onChangeQuantity,
 }: Props) {
   return (
@@ -58,17 +57,17 @@ export default function CartList({
           </tr>
         </thead>
         <tbody>
-          {cart.map((cartProduct, index) => (
-            <tr key={cartProduct.product.self} className="cart-product">
-              <td>{cartProduct.product.name}</td>
-              <td>{cartProduct.product.ean}</td>
+          {items.map((cartItem, index) => (
+            <tr key={cartItem.product.self} className="cart-product">
+              <td>{cartItem.product.name}</td>
+              <td>{cartItem.product.ean}</td>
               <td>
                 <QuantityInput
-                  value={cartProduct.quantity}
+                  value={cartItem.quantity}
                   onChange={(quantity) => onChangeQuantity?.(index, quantity)}
                 />
               </td>
-              <td>{cartProduct.total_price}</td>
+              <td>{cartItem.total_price}</td>
             </tr>
           ))}
           {totalPrice ? (

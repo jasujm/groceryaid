@@ -10,4 +10,5 @@ from .common import (
     Name,
     Ean,
     Price,
+    Quantity,
 )

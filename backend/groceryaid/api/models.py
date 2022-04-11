@@ -10,7 +10,7 @@ import pydantic
 import hrefs
 from hrefs.starlette import ReferrableModel
 
-from ..retail import RetailChain, Name, Ean, Price
+from ..retail import RetailChain, Name, Ean, Price, Quantity
 
 
 class Store(ReferrableModel):
@@ -73,49 +73,16 @@ Product.update_forward_refs()
 
 
 class _CartProductBase(pydantic.BaseModel):
-    quantity: pydantic.PositiveInt
+    quantity: Quantity = pydantic.Field(desccription="Number of items")
 
 
 class CartProduct(_CartProductBase):
     """Product and quantity"""
 
     product: Product
-    total_price: Price = pydantic.Field(description="Price times quantity")
-
-
-class _StoreVisitBase(pydantic.BaseModel):
-    store: hrefs.Href[Store] = pydantic.Field(
-        title="Store hyperlink",
-        description="The store this store visit takes place in",
+    total_price: decimal.Decimal = pydantic.Field(
+        ge=0, description="Price times quantity"
     )
-
-
-class StoreVisit(_StoreVisitBase, ReferrableModel):
-    """State of a single store visit"""
-
-    self: hrefs.Href["StoreVisit"] = pydantic.Field(
-        title="Self hyperlink", description="The URL of the store visit"
-    )
-    id: uuid.UUID
-    cart: list[CartProduct] = pydantic.Field(description="The items in the cart")
-    total_price: Price = pydantic.Field(description="Total price of all items")
-
-    # pylint: disable=all
-    @pydantic.root_validator(pre=True)
-    def _populate_self(cls, values):
-        values["self"] = values["id"]
-        return values
-
-    @pydantic.validator("cart")
-    def _ensure_cart_is_ordered(cls, cart: list[CartProduct]):
-        cart.sort(key=lambda cartproduct: cartproduct.product.ean)
-        return cart
-
-    class Config:
-        details_view = "get_store_visit"
-
-
-StoreVisit.update_forward_refs()
 
 
 class CartProductCreate(_CartProductBase):
@@ -137,8 +104,22 @@ class CartProductCreate(_CartProductBase):
         return self.product.key.ean
 
 
-class _CartCreateMixin(pydantic.BaseModel):
-    cart: list[CartProductCreate] = pydantic.Field(
+class Cart(pydantic.BaseModel):
+    """Cart containing products"""
+
+    items: list[CartProduct] = pydantic.Field(description="The items in the cart")
+    total_price: decimal.Decimal = pydantic.Field(
+        ge=0, description="Total price of all items"
+    )
+
+    @pydantic.validator("items")
+    def _ensure_items_are_ordered(cls, items: list[CartProduct]):
+        items.sort(key=lambda item: item.product.ean)
+        return items
+
+
+class CartCreate(pydantic.BaseModel):
+    items: list[CartProductCreate] = pydantic.Field(
         [],
         description="""The items in the cart.  Each product in the cart must be
                     unique.  To represent multiple products, use the
@@ -148,16 +129,49 @@ class _CartCreateMixin(pydantic.BaseModel):
 
     def get_eans(self) -> typing.Iterable[Ean]:
         """Get all EANs of this cart"""
-        for cartproduct in self.cart:
-            yield cartproduct.get_ean()
+        for item in self.items:
+            yield item.get_ean()
 
-    @pydantic.validator("cart")
-    def validate_cart_has_unique_products(cls, cart: list[CartProductCreate]):
-        eans = collections.Counter(cartproduct.get_ean() for cartproduct in cart)
+    @pydantic.validator("items")
+    def validate_cart_has_unique_products(cls, items: list[CartProductCreate]):
+        eans = collections.Counter(item.get_ean() for item in items)
         duplicate_eans = list(ean for (ean, count) in eans.items() if count > 1)
         if duplicate_eans:
             raise ValueError(f"Duplicate EAN codes: {', '.join(duplicate_eans)}")
-        return cart
+        return items
+
+
+class _StoreVisitBase(pydantic.BaseModel):
+    store: hrefs.Href[Store] = pydantic.Field(
+        title="Store hyperlink",
+        description="The store this store visit takes place in",
+    )
+
+
+class StoreVisit(_StoreVisitBase, ReferrableModel):
+    """State of a single store visit"""
+
+    self: hrefs.Href["StoreVisit"] = pydantic.Field(
+        title="Self hyperlink", description="The URL of the store visit"
+    )
+    id: uuid.UUID
+    cart: Cart
+
+    # pylint: disable=all
+    @pydantic.root_validator(pre=True)
+    def _populate_self(cls, values):
+        values["self"] = values["id"]
+        return values
+
+    class Config:
+        details_view = "get_store_visit"
+
+
+StoreVisit.update_forward_refs()
+
+
+class _CartCreateMixin(pydantic.BaseModel):
+    cart: CartCreate = pydantic.Field(default_factory=CartCreate)
 
 
 class StoreVisitCreate(_CartCreateMixin, _StoreVisitBase):

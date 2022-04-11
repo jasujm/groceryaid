@@ -49,14 +49,17 @@ describe("StoreVisitView", () => {
   it("adds products", async () => {
     const updatedStoreVisit = {
       ...storeVisit,
-      cart: [...storeVisit.cart, cartProductFactory.build()],
+      cart: {
+        ...storeVisit.cart,
+        items: [...storeVisit.cart.items, cartProductFactory.build()],
+      },
     };
     const updateStoreVisit = api.updateStoreVisit as jest.MockedFn<
       typeof api.updateStoreVisit
     >;
     updateStoreVisit.mockResolvedValueOnce(updatedStoreVisit);
     const input = screen.getByPlaceholderText(/ean/i);
-    await userEvent.type(input, updatedStoreVisit.cart[0].product.ean);
+    await userEvent.type(input, updatedStoreVisit.cart.items[0].product.ean);
     const button = screen.getByRole("button");
     await act(() => userEvent.click(button));
     expect(updateStoreVisit).toHaveBeenCalled();

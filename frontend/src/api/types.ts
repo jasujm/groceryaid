@@ -18,10 +18,14 @@ export interface CartProduct {
   total_price: number;
 }
 
+export interface Cart {
+  items: CartProduct[];
+  total_price: number;
+}
+
 export interface StoreVisit {
   self: string;
   id: string;
   store: string;
-  cart: CartProduct[];
-  total_price: number;
+  cart: Cart;
 }

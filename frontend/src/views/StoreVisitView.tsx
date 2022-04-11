@@ -37,11 +37,9 @@ export default function StoreVisitView() {
   return (
     <div className="store-visit-view">
       <ProductPicker onAddProduct={onAddProduct} />
-      <CartList
-        cart={storeVisit?.cart ?? []}
-        totalPrice={storeVisit?.total_price}
-        onChangeQuantity={onChangeQuantity}
-      />
+      {storeVisit && (
+        <CartList cart={storeVisit.cart} onChangeQuantity={onChangeQuantity} />
+      )}
     </div>
   );
 }

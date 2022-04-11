@@ -5,7 +5,7 @@ export function addProduct(ean: string, quantity: number = 1) {
   return [
     {
       op: "add",
-      path: "/cart/-",
+      path: "/cart/items/-",
       value: {
         product: ean,
         quantity,
@@ -18,7 +18,7 @@ export function changeCartProductQuantity(index: number, quantity: number) {
   return [
     {
       op: "replace",
-      path: `/cart/${index}/quantity`,
+      path: `/cart/items/${index}/quantity`,
       value: quantity,
     },
   ];

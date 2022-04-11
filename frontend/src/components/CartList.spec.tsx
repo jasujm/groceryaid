@@ -1,27 +1,19 @@
 import React from "react";
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { faker } from "@faker-js/faker";
 
-import { cartProductFactory } from "../test/factories";
+import { cartFactory } from "../test/factories";
 
 import CartList from "./CartList";
 
-const cart = cartProductFactory.buildList(3);
-const totalPrice = faker.datatype.number({ min: 1 });
+const cart = cartFactory.build();
 
 describe("CartList", () => {
   let onChangeQuantity: jest.Mock;
 
   beforeEach(() => {
     onChangeQuantity = jest.fn();
-    render(
-      <CartList
-        cart={cart}
-        totalPrice={totalPrice}
-        onChangeQuantity={onChangeQuantity}
-      />
-    );
+    render(<CartList cart={cart} onChangeQuantity={onChangeQuantity} />);
   });
 
   afterEach(() => {
@@ -29,13 +21,13 @@ describe("CartList", () => {
   });
 
   it("displays product info", () => {
-    cart.forEach((cartProduct) =>
-      expect(screen.getByText(cart[0].product.name)).toBeInTheDocument()
+    cart.items.forEach((item) =>
+      expect(screen.getByText(item.product.name)).toBeInTheDocument()
     );
   });
 
   it("displays total price", () => {
-    expect(screen.getByText(String(totalPrice))).toBeInTheDocument();
+    expect(screen.getByText(String(cart.total_price))).toBeInTheDocument();
   });
 
   it("supports changing quantity of item", async () => {
@@ -48,10 +40,10 @@ describe("CartList", () => {
     );
     await waitFor(
       () => {
-        cart.forEach((cartProduct, index) => {
+        cart.items.forEach((item, index) => {
           expect(onChangeQuantity).toHaveBeenCalledWith(
             index,
-            10 * cartProduct.quantity
+            10 * item.quantity
           );
         });
       },

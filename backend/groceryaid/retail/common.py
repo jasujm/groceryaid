@@ -38,11 +38,13 @@ if typing.TYPE_CHECKING:
     ExternalId = str
     Name = str
     Price = decimal.Decimal
+    Quantity = int
 
 else:
     ExternalId = pydantic.constr(max_length=36)
     Name = pydantic.constr(max_length=255)
     Price = pydantic.condecimal(max_digits=7, decimal_places=2)
+    Quantity = pydantic.conint(ge=1, le=999)
 
 
 class Ean(str):
