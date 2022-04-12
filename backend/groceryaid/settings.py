@@ -1,5 +1,6 @@
 """Settings management"""
 
+import decimal
 import uuid
 
 import pydantic
@@ -28,6 +29,9 @@ class Settings(pydantic.BaseSettings):
         all products. Setting to a small number is useful for testing.
         """,
     )
+
+    # API defaults
+    default_store_visit_bin_limit: decimal.Decimal = decimal.Decimal(10)
 
     class Config:
         env_file = ".env"

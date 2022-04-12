@@ -180,3 +180,10 @@ class StoreVisitCreate(_CartCreateMixin, _StoreVisitBase):
 
 class StoreVisitUpdate(_CartCreateMixin):
     """Payload for updating a store visit"""
+
+
+class GroupedCart(pydantic.BaseModel):
+    """Cart with items grouped into fixed bins"""
+
+    store_visit: hrefs.Href[StoreVisit]
+    binned_cart: list[Cart]

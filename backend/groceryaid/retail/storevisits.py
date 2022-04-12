@@ -1,12 +1,13 @@
 """Store visit services"""
 
+import decimal
 import uuid
 import typing
 
 import sqlalchemy
 import sqlalchemy.ext.asyncio as sqlaio
 
-from .common import StoreVisit, _get_product_id
+from .common import StoreVisit, CartProduct, _get_product_id
 
 from .. import db
 
@@ -126,3 +127,80 @@ async def update_store_visit(
             ),
             connection=conn,
         )
+
+
+def _divide_cartproduct_to_bin_and_remaining(
+    cartproduct: CartProduct, limit: decimal.Decimal
+) -> tuple[typing.Optional[CartProduct], typing.Optional[CartProduct], decimal.Decimal]:
+    assert cartproduct.price is not None
+    if cartproduct.price > limit:
+        return None, cartproduct, limit
+    if cartproduct.price > 0:
+        n_items_to_bin = min(int(limit / cartproduct.price), cartproduct.quantity)
+    else:
+        n_items_to_bin = cartproduct.quantity
+    new_limit = limit - n_items_to_bin * cartproduct.price
+    if n_items_to_bin == cartproduct.quantity:
+        return cartproduct, None, new_limit
+    n_items_remaining = cartproduct.quantity - n_items_to_bin
+    return (
+        cartproduct.copy(update={"quantity": n_items_to_bin}),
+        cartproduct.copy(update={"quantity": n_items_remaining}),
+        new_limit,
+    )
+
+
+def bin_pack_cart(
+    cart: list[CartProduct], limit: decimal.Decimal
+) -> list[list[CartProduct]]:
+    """Apply bin packing to cart
+
+    Groups the given ``cart`` into multiple bins in such a way that the total
+    price of each cart remains below ``limit``.
+
+    All the products whose price is higher than ``limit`` (and thus couldn't
+    normally be placed in any bin) are returned as part of the last bin.
+
+    Parameters:
+        cart: A list of cart products
+        limit: The target price limit per bin
+
+    Returns:
+        A list of lists of cart products, each containing one bin
+    """
+    cart_with_descending_prices = sorted(
+        cart, key=lambda cartproduct: -cartproduct.price  # type: ignore
+    )
+    last_bin = []
+    while (
+        cart_with_descending_prices
+        and (price := cart_with_descending_prices[0].price)
+        and price > limit
+    ):
+        last_bin.append(cart_with_descending_prices.pop(0))
+    bins = []
+    next_bin = []
+    limit_remaining = limit
+    while cart_with_descending_prices:
+        for i, cartproduct in enumerate(cart_with_descending_prices):
+            (
+                cartproduct_to_bin,
+                cartproduct_remaining,
+                limit_remaining,
+            ) = _divide_cartproduct_to_bin_and_remaining(cartproduct, limit_remaining)
+            if cartproduct_to_bin:
+                next_bin.append(cartproduct_to_bin)
+                if cartproduct_remaining:
+                    cart_with_descending_prices[i] = cartproduct_remaining
+                else:
+                    cart_with_descending_prices.pop(i)
+                break
+        else:
+            bins.append(next_bin)
+            next_bin = []
+            limit_remaining = limit
+    if next_bin:
+        bins.append(next_bin)
+    if last_bin:
+        bins.append(last_bin)
+    return bins

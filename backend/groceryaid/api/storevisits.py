@@ -10,11 +10,17 @@ import pydantic
 import sqlalchemy
 import sqlalchemy.ext.asyncio as sqlaio
 
-from .models import StoreVisit, StoreVisitCreate, StoreVisitUpdate
+from .models import (
+    StoreVisit,
+    StoreVisitCreate,
+    StoreVisitUpdate,
+    GroupedCart,
+)
 
 from .. import db
 from ..retail import storevisits
 from ..retail import StoreVisit as DbStoreVisit, CartProduct as DbCartProduct
+from ..settings import settings
 
 router = fastapi.APIRouter()
 
@@ -95,7 +101,10 @@ def _prepare_store_visit_for_db(
 
 
 def _prepare_cart_product_for_api(
-    store_id: uuid.UUID, cartproduct: DbCartProduct, product: _ProductProxy
+    store_id: uuid.UUID,
+    cartproduct: DbCartProduct,
+    # pylint: disable=dangerous-default-value
+    product: _ProductProxy = {},
 ):
     return {
         "product": {
@@ -108,35 +117,53 @@ def _prepare_cart_product_for_api(
     }
 
 
-def _prepare_store_visit_for_api(
-    storevisit: DbStoreVisit, products: typing.Mapping[str, _ProductProxy]
-) -> dict:
-    store_id = storevisit.store_id
+def _prepare_cart_for_api(
+    store_id: uuid.UUID,
+    cart: typing.Iterable[DbCartProduct],
+    # pylint: disable=dangerous-default-value
+    products: typing.Mapping[str, _ProductProxy] = {},
+):
     items = [
         _prepare_cart_product_for_api(
             store_id, cartproduct, products.get(cartproduct.ean, {})
         )
-        for cartproduct in storevisit.cart
+        for cartproduct in cart
     ]
     return {
-        "id": storevisit.id,
-        "store": store_id,
-        "cart": {
-            "items": items,
-            "total_price": sum(item["total_price"] for item in items),
-        },
+        "items": items,
+        "total_price": sum(item["total_price"] for item in items),
     }
 
 
-async def _get_store_visit(
+def _prepare_store_visit_for_api(
+    storevisit: DbStoreVisit,
+    # pylint: disable=dangerous-default-value
+    products: typing.Mapping[str, _ProductProxy] = {},
+) -> dict:
+    store_id = storevisit.store_id
+    return {
+        "id": storevisit.id,
+        "store": store_id,
+        "cart": _prepare_cart_for_api(store_id, storevisit.cart, products),
+    }
+
+
+async def _read_store_visit(
     id: uuid.UUID, *, connection: typing.Optional[sqlaio.AsyncConnection] = None
-):
+) -> DbStoreVisit:
     if storevisit := await storevisits.read_store_visit(id, connection=connection):
-        return _prepare_store_visit_for_api(storevisit, {})
+        return storevisit
     raise fastapi.HTTPException(
         status_code=fastapi.status.HTTP_404_NOT_FOUND,
         detail=f"Store visit {id=!r} not found",
     )
+
+
+async def _get_store_visit(
+    id: uuid.UUID, *, connection: typing.Optional[sqlaio.AsyncConnection] = None
+) -> dict:
+    storevisit = await _read_store_visit(id, connection=connection)
+    return _prepare_store_visit_for_api(storevisit)
 
 
 @router.get(
@@ -264,3 +291,27 @@ async def patch_store_visit(
         )
         await storevisits.update_store_visit(new_storevisit_data, connection=connection)
         return _prepare_store_visit_for_api(new_storevisit_data, products)
+
+
+@router.get(
+    "/{store_visit_id}/bins",
+    response_model=GroupedCart,
+    responses={
+        fastapi.status.HTTP_404_NOT_FOUND: _RESPONSE_404,
+    },
+)
+async def get_grouped_store_visit_cart(store_visit_id: uuid.UUID):
+    """
+    Group cart (from store visit identified by ``store_visit_id``) into fixed
+    bins, each having its total price capped below a given limit
+    """
+    storevisit = await _read_store_visit(store_visit_id)
+    bins = storevisits.bin_pack_cart(
+        storevisit.cart, settings.default_store_visit_bin_limit
+    )
+    return {
+        "store_visit": store_visit_id,
+        "binned_cart": [
+            _prepare_cart_for_api(storevisit.store_id, cart) for cart in bins
+        ],
+    }

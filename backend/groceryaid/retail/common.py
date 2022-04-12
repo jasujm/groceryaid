@@ -50,11 +50,12 @@ else:
 class Ean(str):
     """EAN code"""
 
-    _ean_pattern = re.compile(r"^[0-9]{13}$")
+    pattern = re.compile(r"\A[0-9]{13}\Z")
+    """Regular expression matchin a valid EAN number"""
 
     @classmethod
     def validate(cls, value: str):
-        if not cls._ean_pattern.fullmatch(value):
+        if not cls.pattern.fullmatch(value):
             raise ValueError(f"{value!r} is not valid EAN number")
         return cls(value)
 
@@ -64,7 +65,7 @@ class Ean(str):
 
     @classmethod
     def __modify_schema__(cls, field_schema):
-        field_schema["pattern"] = cls._ean_pattern.pattern
+        field_schema["pattern"] = cls.pattern.pattern
 
 
 class Store(pydantic.BaseModel):
@@ -110,7 +111,7 @@ class CartProduct(pydantic.BaseModel):
     ean: Ean
     name: typing.Optional[Name]
     price: typing.Optional[Price]
-    quantity: pydantic.PositiveInt
+    quantity: Quantity
 
 
 class StoreVisit(pydantic.BaseModel):

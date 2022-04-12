@@ -317,3 +317,19 @@ def test_patch_store_visit_invalid_model(testclient, storevisit):
         ],
     )
     assert response.status_code == fastapi.status.HTTP_400_BAD_REQUEST
+
+
+def test_get_grouped_store_visit_cart(testclient, storevisit):
+    store_visit_url = f"http://testserver/api/v1/storevisits/{storevisit.id}"
+    response = testclient.get(f"{store_visit_url}/bins")
+    assert response.status_code == fastapi.status.HTTP_200_OK
+    response_json = response.json()
+    assert response_json["store_visit"] == store_visit_url
+    # The bin packing isn't deterministic, so just check that the products are present
+    eans_in_response = set(
+        item["product"]["ean"]
+        for cart in response_json["binned_cart"]
+        for item in cart["items"]
+    )
+    expected_eans = set(cartproduct.ean for cartproduct in storevisit.cart)
+    assert eans_in_response == expected_eans

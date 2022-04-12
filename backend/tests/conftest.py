@@ -2,18 +2,23 @@
 
 import random
 
+import hypothesis.strategies
 import pytest
-
 import pytest_asyncio
 import sqlalchemy.ext.asyncio as sqlaio
 
 from groceryaid import db
-from groceryaid.retail import storevisits
+from groceryaid.retail import storevisits, Ean
 from groceryaid.retail.faker import (
     StoreFactory,
     ProductFactory,
     CartProductFactory,
     StoreVisitFactory,
+)
+
+
+hypothesis.strategies.register_type_strategy(
+    Ean, hypothesis.strategies.from_regex(Ean.pattern).map(Ean)
 )
 
 
