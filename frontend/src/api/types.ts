@@ -19,7 +19,7 @@ export interface CartProduct {
 }
 
 export interface Cart {
-  items: CartProduct[];
+  items: readonly CartProduct[];
   total_price: number;
 }
 
@@ -28,4 +28,8 @@ export interface StoreVisit {
   id: string;
   store: string;
   cart: Cart;
+}
+
+export interface GroupedCart {
+  binned_cart: readonly Cart[];
 }

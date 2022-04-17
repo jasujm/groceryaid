@@ -1,16 +1,22 @@
 import React from "react";
 import { useParams } from "react-router-dom";
+import Tabs from "react-bootstrap/Tabs";
+import Tab from "react-bootstrap/Tab";
 
 import { useSelector, useDispatch } from "../hooks";
 import { loadStoreVisit, updateStoreVisit } from "../reducers/storevisit";
 import { addProduct, changeCartProductQuantity } from "../api/storeVisitOps";
-import ProductPicker from "../components/ProductPicker";
-import CartList from "../components/CartList";
+import { getGroupedStoreVisitCart, GroupedCart } from "../api";
+import CartEditor from "../components/CartEditor";
+import GroupedCartDisplay from "../components/GroupedCart";
 
 export default function StoreVisitView() {
   const storeVisit = useSelector((state) => state.storeVisit);
   const { id } = useParams();
   const dispatch = useDispatch();
+  const [groupedCart, setGroupedCart] = React.useState<GroupedCart | null>(
+    null
+  );
 
   function dispatchUpdateStoreVisit(patch: unknown) {
     // TODO: display errors for failed updates
@@ -28,6 +34,12 @@ export default function StoreVisitView() {
     await dispatchUpdateStoreVisit(changeCartProductQuantity(index, quantity));
   }
 
+  function loadGroupedCart() {
+    if (storeVisit) {
+      getGroupedStoreVisitCart(storeVisit.self).then(setGroupedCart);
+    }
+  }
+
   React.useEffect(() => {
     if (id !== storeVisit?.id) {
       dispatch(loadStoreVisit(id!));
@@ -35,11 +47,23 @@ export default function StoreVisitView() {
   }, [storeVisit, id, dispatch]);
 
   return (
-    <div className="store-visit-view">
-      <ProductPicker onAddProduct={onAddProduct} />
-      {storeVisit && (
-        <CartList cart={storeVisit.cart} onChangeQuantity={onChangeQuantity} />
-      )}
-    </div>
+    storeVisit && (
+      <Tabs className="store-visit-view" defaultActiveKey="cart-editor">
+        <Tab eventKey="cart-editor" title="Cart">
+          <CartEditor
+            cart={storeVisit.cart}
+            onAddProduct={onAddProduct}
+            onChangeQuantity={onChangeQuantity}
+          />
+        </Tab>
+        <Tab
+          eventKey="cart-groups"
+          title="Show grouped"
+          onEnter={loadGroupedCart}
+        >
+          {groupedCart && <GroupedCartDisplay groupedCart={groupedCart} />}
+        </Tab>
+      </Tabs>
+    )
   );
 }

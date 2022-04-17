@@ -1,5 +1,5 @@
 import axios from "axios";
-import { Store, StoreVisit } from "./types";
+import { Store, StoreVisit, GroupedCart } from "./types";
 
 const HTTP_URL_RE = /^(http:|https:)/;
 
@@ -35,4 +35,10 @@ export async function updateStoreVisit(storeVisit: StoreVisit, patch: unknown) {
     headers: { "content-type": "application/json-patch+json" },
   });
   return response.data as StoreVisit;
+}
+
+export async function getGroupedStoreVisitCart(storeVisit: string) {
+  const url = `${getStoreVisitUrl(storeVisit)}/bins`;
+  const response = await client.get(url);
+  return response.data as GroupedCart;
 }

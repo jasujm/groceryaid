@@ -1,7 +1,14 @@
 import { Factory } from "fishery";
 import { faker } from "@faker-js/faker";
 
-import { Store, Product, CartProduct, Cart, StoreVisit } from "../api";
+import {
+  Store,
+  Product,
+  CartProduct,
+  Cart,
+  StoreVisit,
+  GroupedCart,
+} from "../api";
 
 function storeUrl(storeId: string) {
   return `http://localhost/api/v1/stores/${storeId}`;
@@ -54,5 +61,11 @@ export const storeVisitFactory = Factory.define<StoreVisit>(({ params }) => {
     id,
     store: storeUrl(faker.datatype.uuid()),
     cart: cartFactory.build(),
+  };
+});
+
+export const groupedCartFactory = Factory.define<GroupedCart>(() => {
+  return {
+    binned_cart: cartFactory.buildList(3),
   };
 });

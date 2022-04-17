@@ -13,6 +13,7 @@ interface QuantityInputProps {
 export interface Props {
   cart: Cart;
   onChangeQuantity?: (index: number, quantity: number) => void;
+  editable?: boolean;
 }
 
 function QuantityInput({ value, onChange }: QuantityInputProps) {
@@ -44,6 +45,7 @@ function QuantityInput({ value, onChange }: QuantityInputProps) {
 export default function CartList({
   cart: { items, total_price: totalPrice },
   onChangeQuantity,
+  editable = true,
 }: Props) {
   return (
     <div className="cart-list">
@@ -62,10 +64,14 @@ export default function CartList({
               <td>{cartItem.product.name}</td>
               <td>{cartItem.product.ean}</td>
               <td>
-                <QuantityInput
-                  value={cartItem.quantity}
-                  onChange={(quantity) => onChangeQuantity?.(index, quantity)}
-                />
+                {editable ? (
+                  <QuantityInput
+                    value={cartItem.quantity}
+                    onChange={(quantity) => onChangeQuantity?.(index, quantity)}
+                  />
+                ) : (
+                  cartItem.quantity
+                )}
               </td>
               <td>{cartItem.total_price}</td>
             </tr>
