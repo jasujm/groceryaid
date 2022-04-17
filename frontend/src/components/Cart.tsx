@@ -48,14 +48,14 @@ export default function CartList({
   editable = true,
 }: Props) {
   return (
-    <div className="cart-list">
-      <Table className="cart-list-table">
+    <div className="cart">
+      <Table className="cart-table">
         <thead>
           <tr>
             <th>Product</th>
-            <th>EAN code</th>
+            <th>EAN Code</th>
             <th>Quantity</th>
-            <th>Total price</th>
+            <th>Price</th>
           </tr>
         </thead>
         <tbody>
@@ -78,7 +78,7 @@ export default function CartList({
           ))}
           {totalPrice ? (
             <tr className="cart-total-price">
-              <td colSpan={3}></td>
+              <td colSpan={3}>Total</td>
               <td>{totalPrice}</td>
             </tr>
           ) : undefined}

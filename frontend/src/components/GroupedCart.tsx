@@ -13,7 +13,7 @@ export default function GroupedCartDisplay({ groupedCart }: Props) {
     <div className="grouped-cart">
       {groupedCart.binned_cart.map((cart, index) => (
         <div key={index} className="cart-group">
-          <strong>Cart {index + 1}</strong>
+          <strong>Group {index + 1}</strong>
           <Cart cart={cart} editable={false} />
         </div>
       ))}
