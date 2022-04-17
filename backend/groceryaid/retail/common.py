@@ -104,6 +104,12 @@ class Product(pydantic.BaseModel):
             values["id"] = _get_product_id(values["store_id"], values["ean"])
         return values
 
+    @pydantic.validator("price", pre=True)
+    def _round_price(cls, price):
+        if isinstance(price, float):
+            return round(price, 2)
+        return price
+
 
 class CartProduct(pydantic.BaseModel):
     """Product and quantity"""
