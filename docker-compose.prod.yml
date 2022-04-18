@@ -1,0 +1,15 @@
+version: "3"
+services:
+  traefik:
+    volumes:
+    - "./traefik/acme.json:/acme.json:rw"
+  frontend:
+    labels:
+    - "traefik.http.routers.frontend.middlewares=securityheaders@file"
+    - "traefik.http.routers.frontend.tls.certresolver=letsencrypt"
+    - "traefik.http.routers.frontend.tls.domains[0].main=${ACME_HOST}"
+  backend:
+    labels:
+    - "traefik.http.routers.backend.middlewares=securityheaders@file"
+    - "traefik.http.routers.backend.tls.certresolver=letsencrypt"
+    - "traefik.http.routers.backend.tls.domains[0].main=${ACME_HOST}"

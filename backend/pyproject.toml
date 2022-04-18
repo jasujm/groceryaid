@@ -1,5 +1,5 @@
 [tool.poetry]
-name = "grocery-aid-backend"
+name = "groceryaid"
 version = "0.1.0"
 description = "App aiding grocery shopping in Finland"
 authors = ["Jaakko Moisio <jaakko@moisio.fi>"]
@@ -17,6 +17,7 @@ fastapi = "^0.75.0"
 uvicorn = {extras = ["standard"], version = "^0.17.6"}
 hrefs = "^0.5.1"
 jsonpatch = "^1.32"
+gunicorn = "^20.1.0"
 
 [tool.poetry.dev-dependencies]
 pytest = "^7.1.1"
@@ -29,6 +30,9 @@ pytest-asyncio = "^0.18.2"
 aiosqlite = "^0.17.0"
 requests = "^2.27.1"
 hypothesis = "^6.43.0"
+
+[tool.poetry.scripts]
+groceryaid = "groceryaid.__main__:cli"
 
 [tool.mypy]
 plugins = "sqlmypy"

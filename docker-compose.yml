@@ -1,0 +1,52 @@
+version: "3"
+services:
+  traefik:
+    image: "traefik:v2.6"
+    restart: "always"
+    command:
+    - "--providers.file.directory=/etc/groceryaid"
+    - "--providers.docker=true"
+    - "--providers.docker.exposedbydefault=false"
+    - "--entrypoints.web.address=:80"
+    - "--entrypoints.web.http.redirections.entrypoint.to=websecure"
+    - "--entrypoints.web.http.redirections.entrypoint.scheme=https"
+    - "--entrypoints.websecure.address=:443"
+    - "--certificatesresolvers.letsencrypt.acme.tlschallenge=true"
+    - "--certificatesresolvers.letsencrypt.acme.email=${ACME_EMAIL}"
+    ports:
+    - "80:80"
+    - "443:443"
+    volumes:
+    - "/var/run/docker.sock:/var/run/docker.sock:ro"
+    - "./traefik/traefik.yml:/etc/groceryaid/traefik.yml:ro"
+  frontend:
+    image: "jasujm/groceryaid-frontend"
+    build: "frontend/"
+    restart: "always"
+    labels:
+    - "traefik.enable=true"
+    - "traefik.http.routers.frontend.tls=true"
+    - "traefik.http.routers.frontend.entrypoints=websecure"
+    - "traefik.http.routers.frontend.rule=PathPrefix(`/`)"
+  backend:
+    image: "jasujm/groceryaid-backend"
+    build: "backend/"
+    restart: "always"
+    env_file:
+    - "./.env.backend"
+    labels:
+    - "traefik.enable=true"
+    - "traefik.http.routers.backend.tls=true"
+    - "traefik.http.routers.backend.entrypoints=websecure"
+    - "traefik.http.routers.backend.rule=PathPrefix(`/api/v1`)"
+    depends_on:
+    - db
+  db:
+    image: "postgres:14"
+    restart: "always"
+    volumes:
+    - "dbdata:/var/lib/postgresql/data:rw"
+    env_file:
+    - "./.env.db"
+volumes:
+  dbdata:

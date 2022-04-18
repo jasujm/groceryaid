@@ -3,8 +3,7 @@ import { Store, StoreVisit, GroupedCart } from "./types";
 
 const HTTP_URL_RE = /^(http:|https:)/;
 
-const apiOrigin =
-  process.env.REACT_APP_GROCERYAID_API_ORIGIN ?? "http://localhost";
+const apiOrigin = process.env.REACT_APP_GROCERYAID_API_ORIGIN ?? "";
 const client = axios.create({
   baseURL: `${apiOrigin}/api/v1`,
   timeout: 1000,
