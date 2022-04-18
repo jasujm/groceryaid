@@ -36,6 +36,12 @@ export default function App() {
           <Route path="/storevisits/:id" element={<StoreVisitView />} />
         </Routes>
       </main>
+      <footer className="fixed-bottom">
+        <small>
+          <strong>Disclaimed:</strong> Nothing is guaranteed, including but not
+          limited to the accuracy of prices.
+        </small>
+      </footer>
     </Container>
   );
 }
