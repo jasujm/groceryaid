@@ -12,7 +12,7 @@ cli = typer.Typer()
 
 
 @cli.command()
-def bootstrap():
+def init():
     """Bootstrap the application"""
     asyncio.run(db.init())
 
