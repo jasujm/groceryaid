@@ -13,6 +13,7 @@ services:
     - "--entrypoints.websecure.address=:443"
     - "--certificatesresolvers.letsencrypt.acme.tlschallenge=true"
     - "--certificatesresolvers.letsencrypt.acme.email=${ACME_EMAIL}"
+    - "--accesslog"
     ports:
     - "80:80"
     - "443:443"
