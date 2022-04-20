@@ -30,11 +30,9 @@ describe("StoreVisitView", () => {
     );
   }
 
-  beforeEach(async () => {
+  beforeEach(() => {
     storeVisit = storeVisitFactory.build();
     useParams.mockReturnValue({ id: storeVisit.id });
-    getStoreVisit.mockResolvedValue(storeVisit);
-    await act(() => renderView());
   });
 
   afterEach(() => {
@@ -42,26 +40,42 @@ describe("StoreVisitView", () => {
     getStoreVisit.mockRestore();
   });
 
-  it("loads store visit", () => {
-    expect(api.getStoreVisit).toHaveBeenCalledWith(storeVisit.id);
+  describe("when store visit exists", () => {
+    beforeEach(async () => {
+      getStoreVisit.mockResolvedValue(storeVisit);
+      await act(() => renderView());
+    });
+
+    it("loads store visit", () => {
+      expect(api.getStoreVisit).toHaveBeenCalledWith(storeVisit.id);
+    });
+
+    it("adds products", async () => {
+      const updatedStoreVisit = {
+        ...storeVisit,
+        cart: {
+          ...storeVisit.cart,
+          items: [...storeVisit.cart.items, cartProductFactory.build()],
+        },
+      };
+      const updateStoreVisit = api.updateStoreVisit as jest.MockedFn<
+        typeof api.updateStoreVisit
+      >;
+      updateStoreVisit.mockResolvedValueOnce(updatedStoreVisit);
+      const input = screen.getByPlaceholderText(/ean/i);
+      await userEvent.type(input, updatedStoreVisit.cart.items[0].product.ean);
+      const button = screen.getByRole("button");
+      await act(() => userEvent.click(button));
+      expect(updateStoreVisit).toHaveBeenCalled();
+    });
   });
 
-  it("adds products", async () => {
-    const updatedStoreVisit = {
-      ...storeVisit,
-      cart: {
-        ...storeVisit.cart,
-        items: [...storeVisit.cart.items, cartProductFactory.build()],
-      },
-    };
-    const updateStoreVisit = api.updateStoreVisit as jest.MockedFn<
-      typeof api.updateStoreVisit
-    >;
-    updateStoreVisit.mockResolvedValueOnce(updatedStoreVisit);
-    const input = screen.getByPlaceholderText(/ean/i);
-    await userEvent.type(input, updatedStoreVisit.cart.items[0].product.ean);
-    const button = screen.getByRole("button");
-    await act(() => userEvent.click(button));
-    expect(updateStoreVisit).toHaveBeenCalled();
+  describe("when store visit does not exist", () => {
+    it("displays error", async () => {
+      getStoreVisit.mockRejectedValue(undefined);
+      await act(() => renderView());
+      const errorMessage = await screen.findByText(/not found/i);
+      expect(errorMessage).toBeInTheDocument();
+    });
   });
 });

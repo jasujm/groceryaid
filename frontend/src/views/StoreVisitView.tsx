@@ -1,5 +1,6 @@
 import React from "react";
 import { useParams } from "react-router-dom";
+import Alert from "react-bootstrap/Alert";
 import Tabs from "react-bootstrap/Tabs";
 import Tab from "react-bootstrap/Tab";
 
@@ -17,6 +18,7 @@ export default function StoreVisitView() {
   const [groupedCart, setGroupedCart] = React.useState<GroupedCart | null>(
     null
   );
+  const [errorMessage, setErrorMessage] = React.useState("");
 
   function dispatchUpdateStoreVisit(patch: unknown) {
     // TODO: display errors for failed updates
@@ -41,29 +43,37 @@ export default function StoreVisitView() {
   }
 
   React.useEffect(() => {
+    setErrorMessage("");
     if (id !== storeVisit?.id) {
-      dispatch(loadStoreVisit(id!));
+      dispatch(loadStoreVisit(id!))
+        .unwrap()
+        .catch(() => {
+          setErrorMessage("Store visit not found");
+        });
     }
   }, [storeVisit, id, dispatch]);
 
   return (
-    storeVisit && (
-      <Tabs className="store-visit-view" defaultActiveKey="cart-editor">
-        <Tab eventKey="cart-editor" title="Cart">
-          <CartEditor
-            cart={storeVisit.cart}
-            onAddProduct={onAddProduct}
-            onChangeQuantity={onChangeQuantity}
-          />
-        </Tab>
-        <Tab
-          eventKey="cart-groups"
-          title="Show grouped"
-          onEnter={loadGroupedCart}
-        >
-          {groupedCart && <GroupedCartDisplay groupedCart={groupedCart} />}
-        </Tab>
-      </Tabs>
-    )
+    <div className="store-visit-view">
+      {storeVisit && (
+        <Tabs defaultActiveKey="cart-editor">
+          <Tab eventKey="cart-editor" title="Cart">
+            <CartEditor
+              cart={storeVisit.cart}
+              onAddProduct={onAddProduct}
+              onChangeQuantity={onChangeQuantity}
+            />
+          </Tab>
+          <Tab
+            eventKey="cart-groups"
+            title="Show grouped"
+            onEnter={loadGroupedCart}
+          >
+            {groupedCart && <GroupedCartDisplay groupedCart={groupedCart} />}
+          </Tab>
+        </Tabs>
+      )}
+      {errorMessage && <Alert variant="warning">{errorMessage}</Alert>}
+    </div>
   );
 }

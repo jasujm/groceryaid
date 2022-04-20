@@ -21,11 +21,11 @@ export default function StorePicker({ value, onChange }: Props) {
   return (
     <Form.Select
       className="store-picker"
-      value={store?.self}
+      value={store ? store.self : ""}
       disabled={Boolean(store)}
       onChange={(event) => onChange?.(event.target.value)}
     >
-      <option>-- Select store --</option>
+      <option value="">-- Select store --</option>
       {options.map((option) => (
         <option key={option.id} value={option.self}>
           {option.name}

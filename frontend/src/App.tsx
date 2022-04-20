@@ -1,6 +1,7 @@
 import React from "react";
+import Alert from "react-bootstrap/Alert";
 import Container from "react-bootstrap/Container";
-import { Link, Routes, Route } from "react-router-dom";
+import { Link, Routes, Route, useNavigate } from "react-router-dom";
 
 import { useSelector, useDispatch } from "./hooks";
 import HomeView from "./views/HomeView";
@@ -13,9 +14,17 @@ import "./App.scss";
 export default function App() {
   const storeVisit = useSelector((state) => state.storeVisit);
   const dispatch = useDispatch();
+  const navigate = useNavigate();
 
   function onStoreSelected(store: string) {
-    dispatch(createStoreVisit(store));
+    if (store) {
+      // TODO: catch error on failed creation
+      dispatch(createStoreVisit(store))
+        .unwrap()
+        .then((storeVisit) => {
+          navigate(`/storevisits/${storeVisit.id}`, { replace: true });
+        });
+    }
   }
 
   function onNavigateHome() {
@@ -30,10 +39,17 @@ export default function App() {
         </Link>
       </h1>
       <main>
-        <StorePicker onChange={onStoreSelected} value={storeVisit?.store} />
+        <StorePicker
+          onChange={onStoreSelected}
+          value={storeVisit ? storeVisit.store : ""}
+        />
         <Routes>
           <Route index element={<HomeView />} />
           <Route path="/storevisits/:id" element={<StoreVisitView />} />
+          <Route
+            path="*"
+            element={<Alert variant="warning">Nothing here ☹️</Alert>}
+          />
         </Routes>
       </main>
       <footer className="fixed-bottom">

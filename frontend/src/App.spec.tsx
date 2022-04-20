@@ -48,10 +48,21 @@ describe("App", () => {
     const user = userEvent.setup();
     createStoreVisit.mockResolvedValueOnce(storeVisit);
     const select = screen.getByRole("combobox");
-    await screen.findByText(store.name);
     await act(() => user.selectOptions(select, store.name));
     expect(createStoreVisit).toHaveBeenCalledWith(store.self);
     expect(history.location.pathname).toEqual(`/storevisits/${storeVisit.id}`);
+  });
+
+  it("does not create store visit when empty option is selected", async () => {
+    const createStoreVisit = api.createStoreVisit as jest.MockedFn<
+      typeof api.createStoreVisit
+    >;
+    await act(async () => renderApp());
+    await waitFor(() => expect(getStores).toHaveBeenCalled());
+    const user = userEvent.setup();
+    const select = screen.getByRole("combobox");
+    await act(() => user.selectOptions(select, ""));
+    expect(createStoreVisit).not.toHaveBeenCalled();
   });
 
   it("loads store visit when navigating to page", async () => {
