@@ -1,0 +1,15 @@
+# For development just start database in host network
+
+version: "3"
+services:
+  traefik:
+    restart: "no"
+    entrypoint: "/bin/true"
+  frontend:
+    restart: "no"
+    entrypoint: "/bin/true"
+  backend:
+    restart: "no"
+    entrypoint: "/bin/true"
+  db:
+    network_mode: "host"
