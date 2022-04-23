@@ -4,7 +4,7 @@ import { render, screen, act } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import * as reactRouter from "react-router-dom";
 
-import { storeVisitFactory, cartProductFactory } from "../test/factories";
+import { productFactory, storeVisitFactory, cartProductFactory } from "../test/factories";
 import reduxStore from "../store";
 import * as api from "../api";
 
@@ -13,11 +13,14 @@ import StoreVisitView from "./StoreVisitView";
 jest.mock("../api");
 jest.mock("react-router-dom");
 
+const product = productFactory.build();
+
 describe("StoreVisitView", () => {
   let storeVisit: api.StoreVisit;
   const getStoreVisit = api.getStoreVisit as jest.MockedFn<
     typeof api.getStoreVisit
   >;
+  const getProduct = api.getProduct as jest.MockedFn<typeof api.getProduct>;
   const useParams = reactRouter.useParams as jest.MockedFn<
     typeof reactRouter.useParams
   >;
@@ -31,6 +34,7 @@ describe("StoreVisitView", () => {
   }
 
   beforeEach(() => {
+    getProduct.mockResolvedValue(product);
     storeVisit = storeVisitFactory.build();
     useParams.mockReturnValue({ id: storeVisit.id });
   });
@@ -38,6 +42,7 @@ describe("StoreVisitView", () => {
   afterEach(() => {
     useParams.mockRestore();
     getStoreVisit.mockRestore();
+    getProduct.mockRestore();
   });
 
   describe("when store visit exists", () => {
@@ -63,7 +68,7 @@ describe("StoreVisitView", () => {
       >;
       updateStoreVisit.mockResolvedValueOnce(updatedStoreVisit);
       const input = screen.getByPlaceholderText(/ean/i);
-      await userEvent.type(input, updatedStoreVisit.cart.items[0].product.ean);
+      await act(() => userEvent.type(input, updatedStoreVisit.cart.items[0].product.ean));
       const button = screen.getByRole("button");
       await act(() => userEvent.click(button));
       expect(updateStoreVisit).toHaveBeenCalled();

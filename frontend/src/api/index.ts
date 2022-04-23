@@ -7,7 +7,9 @@ export type {
   StoreVisit,
 } from "./types";
 export {
+  ApiError,
   getStores,
+  getProduct,
   createStoreVisit,
   getStoreVisit,
   updateStoreVisit,

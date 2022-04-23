@@ -59,6 +59,7 @@ export default function StoreVisitView() {
         <Tabs defaultActiveKey="cart-editor">
           <Tab eventKey="cart-editor" title="Cart">
             <CartEditor
+              store={storeVisit.store}
               cart={storeVisit.cart}
               onAddProduct={onAddProduct}
               onChangeQuantity={onChangeQuantity}

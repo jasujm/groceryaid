@@ -2,41 +2,69 @@ import React from "react";
 import { render, screen, act } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 
+import * as api from "../api";
+import { storeFactory, productFactory } from "../test/factories";
+
 import ProductPicker from "./ProductPicker";
 
-const ean = "1234567890123";
+jest.mock("./../api");
+
+const store = storeFactory.build();
+const product = productFactory.build({ store: store.self });
+const ean = product.ean;
 
 describe("ProductPicker", () => {
   let onAddProduct: jest.Mock;
+  const getProduct = api.getProduct as jest.MockedFn<typeof api.getProduct>;
 
   beforeEach(() => {
+    getProduct.mockResolvedValue(product);
     onAddProduct = jest.fn();
-    render(<ProductPicker onAddProduct={onAddProduct} />);
+    render(<ProductPicker store={store.self} onAddProduct={onAddProduct} />);
   });
+
+  afterEach(() => {
+    getProduct.mockRestore();
+  });
+
+  async function typeEan(ean: string) {
+    const input = screen.getByPlaceholderText(/ean/i) as HTMLInputElement;
+    await act(() => userEvent.type(input, ean));
+  }
 
   it("dispatches add product event", async () => {
     onAddProduct.mockResolvedValue(undefined);
-    const input = screen.getByPlaceholderText(/ean/i) as HTMLInputElement;
-    await userEvent.type(input, ean);
+    await typeEan(ean);
     const button = screen.getByRole("button");
     await act(() => userEvent.click(button));
     expect(onAddProduct).toHaveBeenCalledWith(ean);
-    expect(input.value).toBeFalsy();
   });
 
   it("validates ean", async () => {
-    const input = screen.getByPlaceholderText(/ean/i) as HTMLInputElement;
-    await userEvent.type(input, "invalid");
-    const error = screen.getByText(/invalid ean/i);
+    await typeEan("invalid");
+    const error = await screen.findByText(/invalid ean/i);
     expect(error).toBeInTheDocument();
     const button = screen.getByRole("button");
     expect(button).toBeDisabled();
   });
 
+  it("displays product", async () => {
+    await typeEan(ean);
+    const productName = await screen.findByText(product.name);
+    expect(productName).toBeInTheDocument();
+  });
+
+  it("displays error on nonexisting product", async () => {
+    getProduct.mockRejectedValue(new Error("no product"));
+    await typeEan(ean);
+    const error = await screen.findByText(/no product/i);
+    expect(error).toBeInTheDocument();
+  });
+
   it("does not clear input on error", async () => {
     onAddProduct.mockRejectedValue(new Error("bad error"));
     const input = screen.getByPlaceholderText(/ean/i) as HTMLInputElement;
-    await userEvent.type(input, ean);
+    await act(() => userEvent.type(input, ean));
     const button = screen.getByRole("button");
     await act(() => userEvent.click(button));
     expect(onAddProduct).toHaveBeenCalledWith(ean);

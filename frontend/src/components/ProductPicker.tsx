@@ -5,19 +5,28 @@ import Form from "react-bootstrap/Form";
 import Button from "react-bootstrap/Button";
 import { Formik } from "formik";
 
+import { Product, getProduct } from "../api";
+
 export interface Props {
+  store: string;
   onAddProduct?: (ean: string) => Promise<void>;
 }
 
-export default function ProductPicker({ onAddProduct }: Props) {
+export default function ProductPicker({ store, onAddProduct }: Props) {
+  const [product, setProduct] = React.useState<Product | null>(null);
+
   return (
     <div className="product-picker">
       <Formik
         initialValues={{ ean: "" }}
-        validate={(values) => {
+        validate={async (values) => {
           const errors: Record<string, string> = {};
-          if (!/[0-9]{13}/i.test(values.ean)) {
+          if (!/^[0-9]{13}$/.test(values.ean)) {
             errors.ean = "Invalid EAN";
+          } else {
+            await getProduct(store, values.ean)
+              .then(setProduct)
+              .catch((e) => { errors.ean = e.message });
           }
           return errors;
         }}
@@ -60,9 +69,14 @@ export default function ProductPicker({ onAddProduct }: Props) {
                   isValid={!errors.ean && touched.ean}
                   isInvalid={Boolean(errors.ean && touched.ean)}
                 />
-                <Form.Control.Feedback type="invalid">
-                  {errors.ean}
-                </Form.Control.Feedback>
+                {errors.ean && (
+                  <Form.Control.Feedback type="invalid">
+                    {errors.ean}
+                  </Form.Control.Feedback>
+                )}
+                {product && (
+                  <Form.Control.Feedback>{product.name}</Form.Control.Feedback>
+                )}
               </Col>
               <Col>
                 <Button type="submit" disabled={!isValid || isSubmitting}>

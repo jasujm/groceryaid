@@ -5,16 +5,18 @@ export interface Props {
   onAddProduct?: ProductPickerProps["onAddProduct"];
   onChangeQuantity?: CartProps["onChangeQuantity"];
   cart: CartProps["cart"];
+  store: string;
 }
 
 export default function CartEditor({
   onAddProduct,
   onChangeQuantity,
   cart,
+  store,
 }: Props) {
   return (
     <div className="cart-editor">
-      <ProductPicker onAddProduct={onAddProduct} />
+      <ProductPicker store={store} onAddProduct={onAddProduct} />
       <Cart cart={cart} onChangeQuantity={onChangeQuantity} />
     </div>
   );
