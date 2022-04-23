@@ -24,13 +24,24 @@ describe("ProductPicker", () => {
     expect(input.value).toBeFalsy();
   });
 
+  it("validates ean", async () => {
+    const input = screen.getByPlaceholderText(/ean/i) as HTMLInputElement;
+    await userEvent.type(input, "invalid");
+    const error = screen.getByText(/invalid ean/i);
+    expect(error).toBeInTheDocument();
+    const button = screen.getByRole("button");
+    expect(button).toBeDisabled();
+  });
+
   it("does not clear input on error", async () => {
-    onAddProduct.mockRejectedValue(new Error("error"));
+    onAddProduct.mockRejectedValue(new Error("bad error"));
     const input = screen.getByPlaceholderText(/ean/i) as HTMLInputElement;
     await userEvent.type(input, ean);
     const button = screen.getByRole("button");
     await act(() => userEvent.click(button));
     expect(onAddProduct).toHaveBeenCalledWith(ean);
     expect(input.value).toEqual(ean);
+    const error = screen.getByText(/bad error/i);
+    expect(error).toBeInTheDocument();
   });
 });
