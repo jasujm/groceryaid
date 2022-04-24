@@ -1,5 +1,6 @@
 import { Factory } from "fishery";
 import { faker } from "@faker-js/faker";
+import random from "lodash/random";
 
 import {
   Store,
@@ -18,6 +19,13 @@ function productUrl(store: string, ean: string) {
   return `${store}/products/${ean}`;
 }
 
+function generateEan() {
+  const digits = Array(13)
+    .fill()
+    .map(() => random(0, 9));
+  return digits.join("");
+}
+
 export const storeFactory = Factory.define<Store>(({ params }) => {
   const id = params.id ?? faker.datatype.uuid();
   return {
@@ -29,7 +37,7 @@ export const storeFactory = Factory.define<Store>(({ params }) => {
 
 export const productFactory = Factory.define<Product>(({ params }) => {
   const store = params.store ?? storeUrl(faker.datatype.uuid());
-  const ean = params.ean ?? "1234567890123";
+  const ean = params.ean ?? generateEan();
   return {
     self: productUrl(store, ean),
     store,
