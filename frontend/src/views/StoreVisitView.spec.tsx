@@ -4,7 +4,11 @@ import { render, screen, act } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import * as reactRouter from "react-router-dom";
 
-import { productFactory, storeVisitFactory, cartProductFactory } from "../test/factories";
+import {
+  productFactory,
+  storeVisitFactory,
+  cartProductFactory,
+} from "../test/factories";
 import reduxStore from "../store";
 import * as api from "../api";
 
@@ -68,7 +72,9 @@ describe("StoreVisitView", () => {
       >;
       updateStoreVisit.mockResolvedValueOnce(updatedStoreVisit);
       const input = screen.getByPlaceholderText(/ean/i);
-      await act(() => userEvent.type(input, updatedStoreVisit.cart.items[0].product.ean));
+      await act(() =>
+        userEvent.type(input, updatedStoreVisit.cart.items[0].product.ean)
+      );
       const button = screen.getByRole("button");
       await act(() => userEvent.click(button));
       expect(updateStoreVisit).toHaveBeenCalled();

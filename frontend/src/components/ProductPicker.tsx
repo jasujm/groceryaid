@@ -26,7 +26,9 @@ export default function ProductPicker({ store, onAddProduct }: Props) {
           } else {
             await getProduct(store, values.ean)
               .then(setProduct)
-              .catch((e) => { errors.ean = e.message });
+              .catch((e) => {
+                errors.ean = e.message;
+              });
           }
           return errors;
         }}
