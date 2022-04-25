@@ -52,7 +52,7 @@ export default function App() {
           />
         </Routes>
       </main>
-      <footer className="fixed-bottom">
+      <footer>
         <small>
           <strong>Disclaimed:</strong> Nothing is guaranteed, including but not
           limited to the accuracy of prices.
