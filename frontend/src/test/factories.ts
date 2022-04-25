@@ -21,7 +21,7 @@ function productUrl(store: string, ean: string) {
 
 function generateEan() {
   const digits = Array(13)
-    .fill()
+    .fill(0)
     .map(() => random(0, 9));
   return digits.join("");
 }
