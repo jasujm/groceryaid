@@ -34,17 +34,12 @@ export default function ProductPicker({ store, onAddProduct }: Props) {
         }}
         onSubmit={(
           values,
-          { setFieldValue, setFieldTouched, setFieldError, setSubmitting }
+          { resetForm, setFieldError, setSubmitting }
         ) => {
           if (onAddProduct) {
             onAddProduct(values.ean)
-              .then(() => {
-                setFieldValue("ean", "");
-                setFieldTouched("ean", false);
-              })
-              .catch((e) => {
-                setFieldError("ean", e.message);
-              })
+              .then(() => resetForm())
+              .catch((e) => setFieldError("ean", e.message))
               .finally(() => setSubmitting(false));
           }
         }}
