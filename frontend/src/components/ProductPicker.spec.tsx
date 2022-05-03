@@ -35,8 +35,8 @@ describe("ProductPicker", () => {
   it("dispatches add product event", async () => {
     onAddProduct.mockResolvedValue(undefined);
     await typeEan(ean);
-    const button = screen.getByRole("button");
-    await act(() => userEvent.click(button));
+    const submit = screen.getByLabelText(/add product/i);
+    await act(() => userEvent.click(submit));
     expect(onAddProduct).toHaveBeenCalledWith(ean);
   });
 
@@ -44,8 +44,8 @@ describe("ProductPicker", () => {
     await typeEan("invalid");
     const error = await screen.findByText(/invalid ean/i);
     expect(error).toBeInTheDocument();
-    const button = screen.getByRole("button");
-    expect(button).toBeDisabled();
+    const submit = screen.getByLabelText(/add product/i);
+    expect(submit).toBeDisabled();
   });
 
   it("displays product", async () => {
@@ -65,11 +65,18 @@ describe("ProductPicker", () => {
     onAddProduct.mockRejectedValue(new Error("bad error"));
     const input = screen.getByPlaceholderText(/ean/i) as HTMLInputElement;
     await act(() => userEvent.type(input, ean));
-    const button = screen.getByRole("button");
-    await act(() => userEvent.click(button));
+    const submit = screen.getByLabelText(/add product/i);
+    await act(() => userEvent.click(submit));
     expect(onAddProduct).toHaveBeenCalledWith(ean);
     expect(input.value).toEqual(ean);
     const error = screen.getByText(/bad error/i);
     expect(error).toBeInTheDocument();
+  });
+
+  it("renders barcode scanner", async () => {
+    const button = screen.getByLabelText(/scan/i);
+    await act(() => userEvent.click(button));
+    const modal = screen.getByText(/scan barcode/i);
+    expect(modal).toBeInTheDocument();
   });
 });

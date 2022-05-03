@@ -75,8 +75,8 @@ describe("StoreVisitView", () => {
       await act(() =>
         userEvent.type(input, updatedStoreVisit.cart.items[0].product.ean)
       );
-      const button = screen.getByRole("button");
-      await act(() => userEvent.click(button));
+      const submit = screen.getByLabelText(/add product/i);
+      await act(() => userEvent.click(submit));
       expect(updateStoreVisit).toHaveBeenCalled();
     });
   });

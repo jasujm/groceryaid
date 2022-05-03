@@ -46,8 +46,8 @@ describe("CartEditor", () => {
   it("supports adding products", async () => {
     const input = screen.getByPlaceholderText(/ean/i) as HTMLInputElement;
     await act(() => userEvent.type(input, ean));
-    const button = screen.getByRole("button");
-    await act(() => userEvent.click(button));
+    const submit = screen.getByLabelText(/add product/i);
+    await act(() => userEvent.click(submit));
     expect(onAddProduct).toHaveBeenCalledWith(ean);
   });
 
