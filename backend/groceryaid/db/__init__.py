@@ -1,6 +1,7 @@
 """Database services"""
 
 from ._db import (
+    get_metadata,
     get_engine,
     get_connection,
     init,

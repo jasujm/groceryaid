@@ -90,6 +90,11 @@ cartproducts = sqlalchemy.Table(
 )
 
 
+def get_metadata() -> sqlalchemy.MetaData:
+    """Return the database metadata"""
+    return _meta
+
+
 def get_engine() -> sqlaio.AsyncEngine:
     """Return the default database engine"""
     return _engine
