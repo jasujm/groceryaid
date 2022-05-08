@@ -132,14 +132,6 @@ class CartCreate(pydantic.BaseModel):
         for item in self.items:
             yield item.get_ean()
 
-    @pydantic.validator("items")
-    def validate_cart_has_unique_products(cls, items: list[CartProductCreate]):
-        eans = collections.Counter(item.get_ean() for item in items)
-        duplicate_eans = list(ean for (ean, count) in eans.items() if count > 1)
-        if duplicate_eans:
-            raise ValueError(f"Duplicate EAN codes: {', '.join(duplicate_eans)}")
-        return items
-
 
 class _StoreVisitBase(pydantic.BaseModel):
     store: hrefs.Href[Store] = pydantic.Field(

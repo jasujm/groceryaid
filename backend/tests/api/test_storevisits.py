@@ -137,28 +137,6 @@ def test_post_store_visit_unknown_store(testclient, faker):
     assert response.status_code == fastapi.status.HTTP_400_BAD_REQUEST
 
 
-def test_post_store_visit_duplicate_product(testclient, store, product, faker):
-    response = testclient.post(
-        "http://testserver/api/v1/storevisits",
-        json={
-            "store": str(store.id),
-            "cart": {
-                "items": [
-                    {
-                        "product": product.ean,
-                        "quantity": faker.pyint(min_value=1, max_value=999),
-                    },
-                    {
-                        "product": product.ean,
-                        "quantity": faker.pyint(min_value=1, max_value=999),
-                    },
-                ],
-            },
-        },
-    )
-    assert response.status_code == fastapi.status.HTTP_422_UNPROCESSABLE_ENTITY
-
-
 def test_post_store_visit_unknown_product(testclient, store, faker):
     store_url = f"http://testserver/api/v1/stores/{store.id}"
     product_url = f"{store_url}/products/{faker.ean()}"

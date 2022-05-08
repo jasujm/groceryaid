@@ -17,9 +17,10 @@ def _prepare_cart_for_db(storevisit: StoreVisit) -> list[dict]:
         {
             "storevisit_id": storevisit.id,
             "product_id": _get_product_id(storevisit.store_id, cartproduct.ean),
+            "rank": rank,
             **cartproduct.dict(include={"quantity"}),
         }
-        for cartproduct in storevisit.cart
+        for (rank, cartproduct) in enumerate(storevisit.cart)
     ]
 
 
@@ -58,7 +59,7 @@ async def read_store_visit(
             )
             .select_from(db.cartproducts.join(db.products))
             .where(db.cartproducts.c.storevisit_id == id)
-            .order_by(db.products.c.ean),
+            .order_by(db.cartproducts.c.rank),
             connection=conn,
         )
     return StoreVisit(
@@ -121,10 +122,7 @@ async def update_store_visit(
         await db.delete(
             db.cartproducts,
             (db.cartproducts.c.storevisit_id == storevisit.id)
-            & db.cartproducts.c.product_id.not_in(  # type: ignore
-                _get_product_id(storevisit.store_id, cartproduct.ean)
-                for cartproduct in storevisit.cart
-            ),
+            & (db.cartproducts.c.rank >= len(storevisit.cart)),
             connection=conn,
         )
 
