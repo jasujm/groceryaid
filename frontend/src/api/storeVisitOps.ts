@@ -1,6 +1,8 @@
 // Return update patches for several store visit operations
 // Might consider to strongly type these or use some JSON patch library?
 
+import { isVariablePriceEan } from "../ean";
+
 export function addProduct(ean: string, quantity: number = 1) {
   return [
     {
@@ -8,7 +10,7 @@ export function addProduct(ean: string, quantity: number = 1) {
       path: "/cart/items/-",
       value: {
         product: ean,
-        quantity,
+        quantity: isVariablePriceEan(ean) ? undefined : quantity,
       },
     },
   ];

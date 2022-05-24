@@ -6,7 +6,7 @@ import fastapi
 
 from .. import db
 
-from .models import Store, Product
+from .models import Store, Product, Ean
 
 router = fastapi.APIRouter()
 
@@ -56,13 +56,15 @@ async def get_store(id: uuid.UUID):
         },
     },
 )
-async def get_product(store_id: uuid.UUID, ean: str):
+async def get_product(store_id: uuid.UUID, ean: Ean):
     """
     Retrieve information about a product identified by store and EAN code
     """
+    ean = ean.get_ean_for_query()
     if product := await db.read(
         db.products,
-        (db.products.c.store_id == store_id) & (db.products.c.ean == ean),
+        (db.products.c.store_id == store_id)
+        & (db.products.c.ean == ean.get_ean_for_query()),
         columns=[db.products.c.name, db.products.c.price],
     ):
         return {
@@ -72,5 +74,5 @@ async def get_product(store_id: uuid.UUID, ean: str):
         }
     raise fastapi.HTTPException(
         status_code=fastapi.status.HTTP_404_NOT_FOUND,
-        detail=f"Product {store_id=!r}, {ean=!r} not found",
+        detail="Product not found",
     )

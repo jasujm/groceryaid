@@ -60,11 +60,14 @@ export default function CartList({
         </thead>
         <tbody>
           {items.map((cartItem, index) => (
-            <tr key={cartItem.product.self} className="cart-product">
+            <tr
+              key={`${cartItem.product.ean}-${index}`}
+              className="cart-product"
+            >
               <td>{cartItem.product.name}</td>
               <td>{cartItem.product.ean}</td>
               <td>
-                {editable ? (
+                {editable && cartItem.quantity != null ? (
                   <QuantityInput
                     value={cartItem.quantity}
                     onChange={(quantity) => onChangeQuantity?.(index, quantity)}

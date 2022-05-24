@@ -44,7 +44,7 @@ describe("Cart", () => {
           cart.items.forEach((item, index) => {
             expect(onChangeQuantity).toHaveBeenCalledWith(
               index,
-              10 * item.quantity
+              10 * item.quantity!
             );
           });
         },

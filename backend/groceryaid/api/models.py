@@ -73,7 +73,15 @@ Product.update_forward_refs()
 
 
 class _CartProductBase(pydantic.BaseModel):
-    quantity: Quantity = pydantic.Field(desccription="Number of items")
+    quantity: typing.Optional[Quantity] = pydantic.Field(
+        description="""Number of items
+
+                    For a variable price product, this is always ``null``
+                    """
+    )
+
+    def is_variable_price(self):
+        return self.quantity is None
 
 
 class CartProduct(_CartProductBase):
@@ -95,13 +103,39 @@ class CartProductCreate(_CartProductBase):
                     """
     )
 
+    @staticmethod
+    def _get_ean_from_product(product):
+        if isinstance(product, Product):
+            return product.ean
+        elif isinstance(product, Ean):
+            return product
+        return product.key.ean
+
     def get_ean(self) -> Ean:
         """Get EAN code of the product"""
+        return self._get_ean_from_product(self.product)
+
+    def get_ean_for_query(self) -> Ean:
+        """Get EAN code of the product for database query"""
+        return self.get_ean().get_ean_for_query()
+
+    def get_price(self) -> typing.Optional[Price]:
+        """Get price of the product"""
         if isinstance(self.product, Product):
-            return self.product.ean
-        elif isinstance(self.product, Ean):
-            return self.product
-        return self.product.key.ean
+            return self.product.price
+        return self.get_ean().get_price()
+
+    @pydantic.root_validator()
+    def _ensure_variable_price_product_has_no_quantity(cls, values):
+        is_variable_price = cls._get_ean_from_product(
+            values["product"]
+        ).is_variable_price()
+        has_quantity = values["quantity"] is not None
+        if is_variable_price and has_quantity:
+            raise ValueError("Variable price product must not have quantity")
+        elif not is_variable_price and not has_quantity:
+            raise ValueError("Fixed price product must have quantity")
+        return values
 
 
 class Cart(pydantic.BaseModel):

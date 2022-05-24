@@ -18,7 +18,8 @@ def _prepare_cart_for_db(storevisit: StoreVisit) -> list[dict]:
             "storevisit_id": storevisit.id,
             "product_id": _get_product_id(storevisit.store_id, cartproduct.ean),
             "rank": rank,
-            **cartproduct.dict(include={"quantity"}),
+            "quantity": cartproduct.quantity,
+            "price": cartproduct.price if cartproduct.is_variable_price() else None,
         }
         for (rank, cartproduct) in enumerate(storevisit.cart)
     ]
@@ -53,7 +54,9 @@ async def read_store_visit(
                 [
                     db.products.c.ean,
                     db.products.c.name,
-                    db.products.c.price,
+                    sqlalchemy.func.coalesce(
+                        db.cartproducts.c.price, db.products.c.price
+                    ).label("price"),
                     db.cartproducts.c.quantity,
                 ]
             )
@@ -133,6 +136,8 @@ def _divide_cartproduct_to_bin_and_remaining(
     assert cartproduct.price is not None
     if cartproduct.price > limit:
         return None, cartproduct, limit
+    if cartproduct.quantity is None:
+        return cartproduct, None, limit - cartproduct.price
     if cartproduct.price > 0:
         n_items_to_bin = min(int(limit / cartproduct.price), cartproduct.quantity)
     else:

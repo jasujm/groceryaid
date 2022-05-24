@@ -14,7 +14,7 @@ export interface Product {
 
 export interface CartProduct {
   product: Product;
-  quantity: number;
+  quantity?: number;
   total_price: number;
 }
 

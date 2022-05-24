@@ -48,6 +48,21 @@ def test_get_product(testclient, product):
     }
 
 
+def test_get_product_variable_price(testclient, variable_price_product, faker):
+    price = faker.pydecimal(positive=True, max_value=10, right_digits=2)
+    ean = variable_price_product.ean.get_ean_with_price(price)
+    store_url = f"http://testserver/api/v1/stores/{variable_price_product.store_id}"
+    response = testclient.get(f"{store_url}/products/{ean}")
+    assert response.status_code == fastapi.status.HTTP_200_OK, response.text
+    assert response.json() == {
+        "self": f"{store_url}/products/{variable_price_product.ean}",
+        "store": f"http://testserver/api/v1/stores/{variable_price_product.store_id}",
+        "ean": variable_price_product.ean,
+        "name": variable_price_product.name,
+        "price": float(variable_price_product.price),
+    }
+
+
 def test_get_product_not_found(testclient, faker):
     response = testclient.get(
         f"http://testserver/apiv1/stores/{faker.uuid4()}/products/{faker.ean()}"

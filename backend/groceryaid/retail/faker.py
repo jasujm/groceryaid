@@ -35,6 +35,16 @@ except ImportError:
 
 else:
 
+    from faker import Faker
+
+    _faker = Faker()
+
+    def _fixed_price_ean():
+        while True:
+            ean = _faker.ean()
+            if not ean.startswith("2"):
+                return ean
+
     class StoreFactory(factory.Factory):
         """Store factory"""
 
@@ -52,7 +62,7 @@ else:
             model = Product
 
         store_id = factory.Faker("uuid4")
-        ean = factory.Faker("ean")
+        ean = factory.LazyFunction(_fixed_price_ean)
         name = factory.Sequence(lambda n: f"Product {n}")
         price = factory.Faker("pydecimal", positive=True, max_value=10, right_digits=2)
 
@@ -62,7 +72,7 @@ else:
         class Meta:
             model = CartProduct
 
-        ean = factory.Faker("ean")
+        ean = factory.LazyFunction(_fixed_price_ean)
         name = factory.Sequence(lambda n: f"Cart product {n}")
         price = factory.Faker("pydecimal", positive=True, max_value=10, right_digits=2)
         quantity = factory.Faker("pyint", min_value=1, max_value=5)

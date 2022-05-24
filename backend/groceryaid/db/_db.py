@@ -86,7 +86,8 @@ cartproducts = sqlalchemy.Table(
     sqlalchemy.Column(
         "product_id", sqlalchemy.ForeignKey("products.id"), nullable=False
     ),
-    sqlalchemy.Column("quantity", sqlalchemy.Integer, nullable=False),
+    sqlalchemy.Column("quantity", sqlalchemy.Integer, nullable=True),
+    sqlalchemy.Column("price", sqlalchemy.DECIMAL(4, 2), nullable=True),
     *_get_timestamp_columns(),
 )
 

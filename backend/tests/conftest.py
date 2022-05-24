@@ -18,7 +18,7 @@ from groceryaid.retail.faker import (
 
 
 hypothesis.strategies.register_type_strategy(
-    Ean, hypothesis.strategies.from_regex(Ean.pattern).map(Ean)
+    Ean, hypothesis.strategies.from_regex(Ean.prefix_pattern).map(Ean.from_prefix)
 )
 
 
@@ -51,6 +51,14 @@ async def products(store):
 def product(products):
     """Return a single product that will also be inserted into the database"""
     return random.choice(products)
+
+
+@pytest_asyncio.fixture
+async def variable_price_product(store):
+    """Return a single product with variable price"""
+    product = ProductFactory.build(ean="2000000000008", store_id=store.id)
+    await db.create(db.products, product.dict())
+    return product
 
 
 @pytest_asyncio.fixture

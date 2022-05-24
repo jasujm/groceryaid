@@ -1,5 +1,7 @@
 """Test store visit API"""
 
+import decimal
+
 import fastapi
 
 
@@ -127,6 +129,49 @@ def test_post_store_visit_ean_lookup(testclient, store, product, faker):
     }
 
 
+def test_post_store_visit_variable_price_ean_lookup(
+    testclient, store, variable_price_product
+):
+    store_url = f"http://testserver/api/v1/stores/{store.id}"
+    variable_price = decimal.Decimal("12.34")
+    variable_price_ean = variable_price_product.ean.get_ean_with_price(variable_price)
+    response = testclient.post(
+        "http://testserver/api/v1/storevisits",
+        json={
+            "store": store_url,
+            "cart": {
+                "items": [{"product": variable_price_ean}],
+            },
+        },
+    )
+    assert response.status_code == fastapi.status.HTTP_201_CREATED, response.text
+    storevisit_url = response.headers["Location"]
+    expected_storevisit_id = storevisit_url.split("/")[-1]
+    response = testclient.get(storevisit_url)
+    response_json = response.json()
+    assert response_json == {
+        "self": storevisit_url,
+        "id": expected_storevisit_id,
+        "store": store_url,
+        "cart": {
+            "items": [
+                {
+                    "product": {
+                        "self": f"{store_url}/products/{variable_price_product.ean}",
+                        "store": store_url,
+                        "ean": variable_price_product.ean,
+                        "name": variable_price_product.name,
+                        "price": float(variable_price),
+                    },
+                    "quantity": None,
+                    "total_price": float(variable_price),
+                }
+            ],
+            "total_price": response_json["cart"]["total_price"],
+        },
+    }
+
+
 def test_post_store_visit_unknown_store(testclient, faker):
     response = testclient.post(
         "http://testserver/api/v1/storevisits",
@@ -155,6 +200,24 @@ def test_post_store_visit_unknown_product(testclient, store, faker):
         },
     )
     assert response.status_code == fastapi.status.HTTP_400_BAD_REQUEST
+
+
+def test_post_store_visit_variable_price_with_quantity(
+    testclient, store, variable_price_product
+):
+    store_url = f"http://testserver/api/v1/stores/{store.id}"
+    response = testclient.post(
+        "http://testserver/api/v1/storevisits",
+        json={
+            "store": store_url,
+            "cart": {
+                "items": [{"product": variable_price_product.ean, "quantity": 1}],
+            },
+        },
+    )
+    assert (
+        response.status_code == fastapi.status.HTTP_422_UNPROCESSABLE_ENTITY
+    ), response.text
 
 
 def test_put_store_visit(testclient, storevisit, store, product, faker):

@@ -2,6 +2,8 @@ import { Factory } from "fishery";
 import { faker } from "@faker-js/faker";
 import random from "lodash/random";
 
+import { calculateCheckDigit } from "../ean";
+
 import {
   Store,
   Product,
@@ -20,10 +22,11 @@ function productUrl(store: string, ean: string) {
 }
 
 function generateEan() {
-  const digits = Array(13)
+  const digits = Array(12)
     .fill(0)
     .map(() => random(0, 9));
-  return digits.join("");
+  const eanPrefix = digits.join("");
+  return eanPrefix + calculateCheckDigit(eanPrefix);
 }
 
 export const storeFactory = Factory.define<Store>(({ params }) => {

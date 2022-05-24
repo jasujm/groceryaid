@@ -50,12 +50,74 @@ else:
 class Ean(str):
     """EAN code"""
 
+    prefix_pattern = re.compile(r"\A[0-9]{12}\Z")
+    variable_price_prefix_pattern = re.compile(r"\A2[0-9]{11}\Z")
     pattern = re.compile(r"\A[0-9]{13}\Z")
-    """Regular expression matchin a valid EAN number"""
+
+    def is_variable_price(self):
+        """Return ``True`` if this is a variable price EAN"""
+        return self.startswith("2")
+
+    def get_ean_for_query(self) -> "Ean":
+        """Return EAN in normalized database format
+
+        For variable price EANs, it is the EAN identifying the same product, but
+        with price 0.
+
+        For fixed price EAN, it is the EAN itself.
+        """
+        if self.is_variable_price():
+            return self.from_prefix(self[:8] + "0000")
+        return self
+
+    def get_ean_with_price(self, price: Price) -> "Ean":
+        """Return EAN with given price
+
+        This only works for variable price EAN.
+
+        Raises:
+            ValueError if this is not variable price EAN
+        """
+        if not self.is_variable_price():
+            raise ValueError(f"{self!r} is not variable price EAN code")
+        if not 0 < price < 100:
+            raise ValueError("f{price} is out of range")
+        encoded_price = str(int(price.scaleb(2))).rjust(4, "0")
+        return self.from_prefix(self[:8] + encoded_price)
+
+    def get_price(self) -> typing.Optional[Price]:
+        """Return price encoded in the EAN
+
+        Returns:
+            The encoded price for variable price EAN, or ``None`` for fixed
+            price EAN
+        """
+        if self.is_variable_price():
+            return Price(self[8:12]).scaleb(-2)
+        return None
+
+    @staticmethod
+    def calculate_check_digit(prefix: str) -> str:
+        """Calculates check digit for 12 letter EAN prefix"""
+        checksum = sum(int(c) for c in prefix[0::2]) + 3 * sum(
+            int(c) for c in prefix[1::2]
+        )
+        checksum %= 10
+        if checksum == 0:
+            return "0"
+        return str(10 - checksum)
+
+    @classmethod
+    def from_prefix(cls, prefix: str) -> "Ean":
+        """Return EAN from 12 letter EAN prefix"""
+        return cls(prefix + cls.calculate_check_digit(prefix))
 
     @classmethod
     def validate(cls, value: str):
-        if not cls.pattern.fullmatch(value):
+        if (
+            not cls.pattern.fullmatch(value)
+            or cls.calculate_check_digit(value[:12]) != value[12]
+        ):
             raise ValueError(f"{value!r} is not valid EAN number")
         return cls(value)
 
@@ -117,7 +179,21 @@ class CartProduct(pydantic.BaseModel):
     ean: Ean
     name: typing.Optional[Name]
     price: typing.Optional[Price]
-    quantity: Quantity
+    quantity: typing.Optional[Quantity]
+
+    def is_variable_price(self):
+        """Return ``True`` if the cart product is variable price
+
+        A cart product is variable price, if its quantity is zero.  Variable
+        price products are indivisible.
+        """
+        return self.quantity is None
+
+    def get_total_price(self) -> typing.Optional[Price]:
+        """Return the total price of the cart product, if known"""
+        if self.price is not None:
+            return (self.quantity or 1) * self.price
+        return None
 
 
 class StoreVisit(pydantic.BaseModel):

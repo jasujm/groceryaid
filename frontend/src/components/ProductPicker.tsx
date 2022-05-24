@@ -9,6 +9,7 @@ import { UpcScan, PlusLg } from "react-bootstrap-icons";
 import { useFormik } from "formik";
 
 import { Product, getProduct } from "../api";
+import { isValidEan } from "../ean";
 
 import BarcodeScanner from "./BarcodeScanner";
 
@@ -34,7 +35,7 @@ export default function ProductPicker({ store, onAddProduct }: Props) {
     initialValues: { ean: "" },
     validate: async (values) => {
       const errors: Record<string, string> = {};
-      if (!/^[0-9]{13}$/.test(values.ean)) {
+      if (!isValidEan(values.ean)) {
         errors.ean = "Invalid EAN";
       } else {
         await getProduct(store, values.ean)

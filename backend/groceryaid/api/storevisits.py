@@ -66,7 +66,7 @@ async def _get_product_records(
     storevisit: StoreVisitCreate | StoreVisitUpdate,
     store_id: uuid.UUID,
 ) -> _ProductProxy:
-    product_eans = set(storevisit.cart.get_eans())
+    product_eans = set(ean.get_ean_for_query() for ean in storevisit.cart.get_eans())
     known_products = (
         await db.execute(
             sqlalchemy.select([db.products.c.ean, db.products.c.name, db.products.c.price]).where(  # type: ignore
@@ -92,12 +92,19 @@ def _prepare_store_visit_for_db(
         **kwargs,
         cart=[
             {
-                "ean": item.get_ean(),
-                **item.dict(exclude={"product", "ean"}),
+                "ean": item.get_ean_for_query(),
+                "price": item.get_price(),
+                **item.dict(exclude={"product", "ean", "price"}),
             }
             for item in storevisit.cart.items
         ],
     )
+
+
+def _get_total_price(cartproduct: DbCartProduct, product: _ProductProxy):
+    if (total_price := cartproduct.get_total_price()) is not None:
+        return total_price
+    return (cartproduct.quantity or 1) * (product["price"] or 0)
 
 
 def _prepare_cart_product_for_api(
@@ -113,7 +120,7 @@ def _prepare_cart_product_for_api(
             **product,
         },
         "quantity": cartproduct.quantity,
-        "total_price": cartproduct.quantity * (cartproduct.price or product["price"]),
+        "total_price": _get_total_price(cartproduct, product),
     }
 
 
