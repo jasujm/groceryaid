@@ -16,6 +16,15 @@ export function addProduct(ean: string, quantity: number = 1) {
   ];
 }
 
+export function removeProduct(index: number) {
+  return [
+    {
+      op: "remove",
+      path: `/cart/items/${index}`,
+    },
+  ];
+}
+
 export function changeCartProductQuantity(index: number, quantity: number) {
   return [
     {

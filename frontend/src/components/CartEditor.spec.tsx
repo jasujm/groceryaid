@@ -16,6 +16,7 @@ const cart = cartFactory.build();
 describe("CartEditor", () => {
   let onAddProduct: jest.Mock;
   let onChangeQuantity: jest.Mock;
+  let onRemoveProduct: jest.Mock;
   const getProduct = api.getProduct as jest.MockedFn<typeof api.getProduct>;
 
   beforeEach(() => {
@@ -23,12 +24,14 @@ describe("CartEditor", () => {
     onAddProduct = jest.fn();
     onAddProduct.mockResolvedValue(undefined);
     onChangeQuantity = jest.fn();
+    onRemoveProduct = jest.fn();
     render(
       <CartEditor
         store={store.self}
         cart={cart}
         onAddProduct={onAddProduct}
         onChangeQuantity={onChangeQuantity}
+        onRemoveProduct={onRemoveProduct}
       />
     );
   });
@@ -60,5 +63,11 @@ describe("CartEditor", () => {
       },
       { timeout: 300 }
     );
+  });
+
+  it("supports removing products", async () => {
+    const input = screen.getAllByLabelText("Remove product")[0];
+    await act(() => userEvent.click(input));
+    expect(onRemoveProduct).toHaveBeenCalled();
   });
 });

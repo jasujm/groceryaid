@@ -11,10 +11,18 @@ const cart = cartFactory.build();
 describe("Cart", () => {
   describe("when editable", () => {
     let onChangeQuantity: jest.Mock;
+    let onRemoveProduct: jest.Mock;
 
     beforeEach(() => {
       onChangeQuantity = jest.fn();
-      render(<Cart cart={cart} onChangeQuantity={onChangeQuantity} />);
+      onRemoveProduct = jest.fn();
+      render(
+        <Cart
+          cart={cart}
+          onChangeQuantity={onChangeQuantity}
+          onRemoveProduct={onRemoveProduct}
+        />
+      );
     });
 
     afterEach(() => {
@@ -51,10 +59,23 @@ describe("Cart", () => {
         { timeout: 300 }
       );
     });
+
+    it("supports removing products", async () => {
+      const inputs = screen.getAllByRole("button");
+      await Promise.all(
+        inputs.map(async (input) => {
+          await userEvent.click(input);
+        })
+      );
+      cart.items.forEach((_, index) => {
+        expect(onRemoveProduct).toHaveBeenCalledWith(index);
+      });
+    });
   });
 
   it("is optionally not editable", () => {
     render(<Cart cart={cart} editable={false} />);
     expect(screen.queryByRole("spinbutton")).not.toBeInTheDocument();
+    expect(screen.queryByRole("button")).not.toBeInTheDocument();
   });
 });

@@ -6,7 +6,11 @@ import Tab from "react-bootstrap/Tab";
 
 import { useSelector, useDispatch } from "../hooks";
 import { loadStoreVisit, updateStoreVisit } from "../reducers/storevisit";
-import { addProduct, changeCartProductQuantity } from "../api/storeVisitOps";
+import {
+  addProduct,
+  changeCartProductQuantity,
+  removeProduct,
+} from "../api/storeVisitOps";
 import { getGroupedStoreVisitCart, GroupedCart } from "../api";
 import CartEditor from "../components/CartEditor";
 import GroupedCartDisplay from "../components/GroupedCart";
@@ -36,6 +40,10 @@ export default function StoreVisitView() {
     await dispatchUpdateStoreVisit(changeCartProductQuantity(index, quantity));
   }
 
+  async function onRemoveProduct(index: number) {
+    await dispatchUpdateStoreVisit(removeProduct(index));
+  }
+
   function loadGroupedCart() {
     if (storeVisit) {
       getGroupedStoreVisitCart(storeVisit.self).then(setGroupedCart);
@@ -63,6 +71,7 @@ export default function StoreVisitView() {
               cart={storeVisit.cart}
               onAddProduct={onAddProduct}
               onChangeQuantity={onChangeQuantity}
+              onRemoveProduct={onRemoveProduct}
             />
           </Tab>
           <Tab

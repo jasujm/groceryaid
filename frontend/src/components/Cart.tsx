@@ -1,6 +1,9 @@
 import React from "react";
 import Form from "react-bootstrap/Form";
 import Table from "react-bootstrap/Table";
+import Button from "react-bootstrap/Button";
+import InputGroup from "react-bootstrap/InputGroup";
+import { Trash } from "react-bootstrap-icons";
 import debounce from "lodash/debounce";
 
 import { Cart } from "../api";
@@ -13,6 +16,7 @@ interface QuantityInputProps {
 export interface Props {
   cart: Cart;
   onChangeQuantity?: (index: number, quantity: number) => void;
+  onRemoveProduct?: (index: number) => void;
   editable?: boolean;
 }
 
@@ -38,6 +42,7 @@ function QuantityInput({ value, onChange }: QuantityInputProps) {
       max="999"
       value={uncommitedValue ?? value}
       onChange={(event) => handleOnChange(Number(event.target.value))}
+      aria-label="Change quantity"
     />
   );
 }
@@ -45,6 +50,7 @@ function QuantityInput({ value, onChange }: QuantityInputProps) {
 export default function CartList({
   cart: { items, total_price: totalPrice },
   onChangeQuantity,
+  onRemoveProduct,
   editable = true,
 }: Props) {
   return (
@@ -67,11 +73,25 @@ export default function CartList({
               <td>{cartItem.product.name}</td>
               <td>{cartItem.product.ean}</td>
               <td>
-                {editable && cartItem.quantity != null ? (
-                  <QuantityInput
-                    value={cartItem.quantity}
-                    onChange={(quantity) => onChangeQuantity?.(index, quantity)}
-                  />
+                {editable ? (
+                  <InputGroup>
+                    {cartItem.quantity != null && (
+                      <QuantityInput
+                        value={cartItem.quantity}
+                        onChange={(quantity) =>
+                          onChangeQuantity?.(index, quantity)
+                        }
+                      />
+                    )}
+                    <Button
+                      className="remove-product"
+                      variant="danger"
+                      onClick={() => onRemoveProduct?.(index)}
+                      aria-label="Remove product"
+                    >
+                      <Trash />
+                    </Button>
+                  </InputGroup>
                 ) : (
                   cartItem.quantity
                 )}
