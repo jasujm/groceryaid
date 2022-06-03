@@ -18,7 +18,8 @@ FROM base
 
 EXPOSE 8000
 
-COPY start.sh ./
+COPY start.sh alembic.ini ./
+COPY alembic ./alembic
 COPY --from=builder /usr/venv /usr/venv
 
 ENTRYPOINT ["./start.sh"]
